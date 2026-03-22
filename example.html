@@ -221,6 +221,7 @@ header .meta { margin-top: 0.8rem; font-size: 0.82rem; color: var(--text-dim); o
     <button class="nav-tab active" onclick="showTab('theory')">Теорія</button>
     <button class="nav-tab" onclick="showTab('ex1')">Приклад 1 — 4 промені</button>
     <button class="nav-tab" onclick="showTab('ex2')">Приклад 2 — 5 променів</button>
+    <button class="nav-tab" onclick="showTab('collapse')">Згортання багатокутника</button>
   </div>
 
   <!-- ═══════════════ ТЕОРІЯ ═══════════════ -->
@@ -750,6 +751,340 @@ x₄₅ = 0.30 × 0.40 × 30.0 = <strong>3.600</strong>
             <div class="schema-label">Еквівалентний п'ятикутник з діагоналями — 10 опорів (<span style="color:#10b981">зелений</span>) + 10 ЕРС (<span style="color:#f472b6">рожевий</span>)</div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ ЗГОРТАННЯ БАГАТОКУТНИКА ═══════════════ -->
+  <div id="collapse" class="tab-content">
+    <div class="theory-block">
+      <h2>Згортання багатокутника та розрахунок надперехідного струму</h2>
+      <p>Після перетворення зірки в багатокутник <strong>далі спрощуємо</strong> схему, щоб отримати еквівалентну гілку між двома вузлами. Це дозволяє визначити надперехідний струм між відповідними джерелами.</p>
+
+      <h3>Метод послідовного зведення (Ульянов)</h3>
+      <p>Для n>3 прямої формули ЕРС не існує. Застосовується <strong>послідовне об'єднання променів</strong>, доки не залишиться 3 промені, після чого використовується формула Ульянова для трикутника:</p>
+
+      <div class="formula-box emf-formula">
+        <span class="label">Формула ЕРС для зірки→трикутник (Ульянов)</span>
+Ė₁₂ = (Ė₁·(x₂ + x₃) − (Ė₂ + Ė₃)·x₁) / (x₁ + x₂ + x₃)<br>
+Ė₂₃ = (Ė₂·(x₁ + x₃) − (Ė₁ + Ė₃)·x₂) / (x₁ + x₂ + x₃)<br>
+Ė₃₁ = (Ė₃·(x₁ + x₂) − (Ė₁ + Ė₂)·x₃) / (x₁ + x₂ + x₃)
+      </div>
+
+      <h3>Об'єднання паралельних променів</h3>
+      <p>Два промені k та m, що підключені до спільного вузла, об'єднуються в один еквівалентний промінь:</p>
+      <div class="formula-box">
+        <span class="label">Паралельне з'єднання двох променів (з ЕРС)</span>
+x<sub>(km)</sub> = x<sub>k</sub>·x<sub>m</sub> / (x<sub>k</sub>+x<sub>m</sub>)<br>
+Ė<sub>(km)</sub> = (Ė<sub>k</sub>·x<sub>m</sub> + Ė<sub>m</sub>·x<sub>k</sub>) / (x<sub>k</sub>+x<sub>m</sub>)
+      </div>
+
+      <h3>Згортання трикутника до однієї гілки</h3>
+      <p>Отримавши еквівалентний трикутник з ЕРС, виключаємо третій вузол. Шлях через нього з'єднується <strong>послідовно</strong>, а потім — <strong>паралельно</strong> з прямою гілкою. Оскільки сума ЕРС по контуру = 0, ЕРС послідовного шляху дорівнює ЕРС прямої гілки:</p>
+      <div class="formula-box">
+        <span class="label">Еквівалентний опір та струм</span>
+x<sub>екв</sub> = x₁₂ ‖ (x₁R + x₂R) &nbsp;&nbsp; де R — об'єднаний вузол інших генераторів<br>
+I″<sub>12</sub> = Ė₁₂ / x<sub>екв</sub>
+      </div>
+    </div>
+
+    <div class="example-card">
+      <div class="example-header">
+        <div class="example-number">3</div>
+        <div class="example-title">Згортання п'ятипроменевої зірки — надперехідний струм між генераторами 1 та 2</div>
+      </div>
+      <div class="example-body">
+
+        <p><strong>Дано:</strong> П'ятипроменева зірка з Прикладу 2 (опори та ЕРС джерел).</p>
+        <p><strong>Потрібно:</strong> Знайти еквівалентний опір та ЕРС між вузлами 1 і 2, визначити надперехідний струм I″₁₂.</p>
+
+        <!-- Вихідна схема багатокутника -->
+        <div class="schema-container">
+          <div class="schema-box" style="padding: 1.5rem;">
+            <svg viewBox="0 0 600 530" width="560" xmlns="http://www.w3.org/2000/svg">
+              <!-- Сторони -->
+              <line x1="300" y1="35" x2="514" y2="191" stroke="#10b981" stroke-width="2.5"/>
+              <line x1="514" y1="191" x2="432" y2="444" stroke="#10b981" stroke-width="2.5"/>
+              <line x1="432" y1="444" x2="168" y2="444" stroke="#10b981" stroke-width="2.5"/>
+              <line x1="168" y1="444" x2="86" y2="191" stroke="#10b981" stroke-width="2.5"/>
+              <line x1="86" y1="191" x2="300" y2="35" stroke="#10b981" stroke-width="2.5"/>
+              <!-- Діагоналі -->
+              <line x1="300" y1="35" x2="432" y2="444" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8,4"/>
+              <line x1="300" y1="35" x2="168" y2="444" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8,4"/>
+              <line x1="514" y1="191" x2="168" y2="444" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8,4"/>
+              <line x1="514" y1="191" x2="86" y2="191" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8,4"/>
+              <line x1="432" y1="444" x2="86" y2="191" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8,4"/>
+              <!-- Виділення гілки 1-2 -->
+              <line x1="300" y1="35" x2="514" y2="191" stroke="#f59e0b" stroke-width="4" opacity="0.3"/>
+              <!-- Вузли -->
+              <circle cx="300" cy="35" r="14" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="514" cy="191" r="14" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="432" cy="444" r="14" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="168" cy="444" r="14" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="86" cy="191" r="14" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <!-- Номери -->
+              <text x="300" y="41" font-size="16" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">1</text>
+              <text x="514" y="197" font-size="16" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">2</text>
+              <text x="432" y="450" font-size="16" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">3</text>
+              <text x="168" y="450" font-size="16" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">4</text>
+              <text x="86" y="197" font-size="16" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">5</text>
+              <!-- Мітки сторін -->
+              <text x="422" y="88" font-size="12" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₁₂=0.360</text>
+              <text x="484" y="315" font-size="12" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₂₃=0.900</text>
+              <text x="248" y="486" font-size="12" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₃₄=1.800</text>
+              <text x="28" y="315" font-size="12" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₄₅=3.600</text>
+              <text x="130" y="88" font-size="12" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₅₁=0.960</text>
+              <!-- Діагоналі мітки -->
+              <text x="376" y="248" font-size="11" fill="#ef4444" font-family="JetBrains Mono">x₁₃=0.480</text>
+              <text x="168" y="236" font-size="11" fill="#ef4444" font-family="JetBrains Mono">x₁₄=0.720</text>
+              <text x="312" y="352" font-size="11" fill="#ef4444" font-family="JetBrains Mono">x₂₄=1.350</text>
+              <text x="255" y="175" font-size="11" fill="#ef4444" font-family="JetBrains Mono">x₂₅=1.800</text>
+              <text x="204" y="352" font-size="11" fill="#ef4444" font-family="JetBrains Mono">x₃₅=2.400</text>
+              <!-- ЕРС генераторів -->
+              <text x="300" y="15" font-size="11" fill="#f472b6" font-family="JetBrains Mono" text-anchor="middle">Ė₁=1.13</text>
+              <text x="542" y="185" font-size="11" fill="#f472b6" font-family="JetBrains Mono">Ė₂=1.10</text>
+              <text x="448" y="472" font-size="11" fill="#f472b6" font-family="JetBrains Mono">Ė₃=1.08</text>
+              <text x="98" y="472" font-size="11" fill="#f472b6" font-family="JetBrains Mono">Ė₄=1.12</text>
+              <text x="18" y="185" font-size="11" fill="#f472b6" font-family="JetBrains Mono">Ė₅=1.05</text>
+            </svg>
+            <div class="schema-label">Вихідний п'ятикутник з 10 опорами — шукаємо еквівалент між вузлами <span style="color:#f59e0b">1</span> та <span style="color:#f59e0b">2</span></div>
+          </div>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- КРОК 1: Об'єднання променів -->
+        <h3 style="color: var(--accent2); margin: 1.5rem 0 1rem; font-size: 1.2rem;">Етап А. Зведення 5 променів до 3 (об'єднання)</h3>
+
+        <div class="step">
+          <div class="step-label">Крок 1 — Об'єднання променів 4 і 5</div>
+          <p>Промені 4 та 5 підключені до спільного центрального вузла. Об'єднуємо їх у один еквівалентний промінь (45):</p>
+          <div class="formula-box">
+x₍₄₅₎ = x₄·x₅/(x₄+x₅) = 0.30×0.40/(0.30+0.40) = <strong>0.1714</strong><br>
+Ė₍₄₅₎ = (Ė₄·x₅+Ė₅·x₄)/(x₄+x₅) = (1.12×0.40+1.05×0.30)/(0.30+0.40) = <strong>1.0900</strong>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-label">Крок 2 — Об'єднання променя 3 з (45)</div>
+          <p>Тепер маємо 4 промені: 1, 2, 3, (45). Об'єднуємо промені 3 та (45) у промінь (345):</p>
+          <div class="formula-box">
+x₍₃₄₅₎ = x₃·x₍₄₅₎/(x₃+x₍₄₅₎) = 0.20×0.1714/(0.20+0.1714) = <strong>0.0923</strong><br>
+Ė₍₃₄₅₎ = (Ė₃·x₍₄₅₎+Ė₍₄₅₎·x₃)/(x₃+x₍₄₅₎) = (1.08×0.1714+1.09×0.20)/(0.20+0.1714) = <strong>1.0854</strong>
+          </div>
+        </div>
+
+        <div class="result-box">
+          <span class="res-label">Трипроменева зірка (після об'єднання)</span>
+Промінь 1: x₁ = 0.08, Ė₁ = 1.13<br>
+Промінь 2: x₂ = 0.15, Ė₂ = 1.10<br>
+Промінь (345): x₍₃₄₅₎ = 0.0923, Ė₍₃₄₅₎ = 1.0854
+        </div>
+
+        <!-- Проміжна схема: 3-променева зірка -->
+        <div class="schema-container">
+          <div class="schema-box" style="padding: 1.2rem;">
+            <svg viewBox="0 0 420 280" width="400" xmlns="http://www.w3.org/2000/svg">
+              <!-- центр -->
+              <circle cx="210" cy="150" r="5" fill="#f59e0b"/>
+              <text x="222" y="146" font-size="11" fill="#94a3b8" font-family="JetBrains Mono">0</text>
+              <!-- промінь 1 (вгору-ліво) -->
+              <line x1="210" y1="150" x2="80" y2="40" stroke="#3b82f6" stroke-width="2.5"/>
+              <circle cx="80" cy="40" r="12" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <text x="80" y="46" font-size="14" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">1</text>
+              <text x="112" y="80" font-size="11" fill="#3b82f6" font-family="JetBrains Mono" font-weight="600">x₁=0.08</text>
+              <text x="40" y="28" font-size="11" fill="#f472b6" font-family="JetBrains Mono">Ė₁=1.13</text>
+              <!-- промінь 2 (вгору-право) -->
+              <line x1="210" y1="150" x2="340" y2="40" stroke="#3b82f6" stroke-width="2.5"/>
+              <circle cx="340" cy="40" r="12" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <text x="340" y="46" font-size="14" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">2</text>
+              <text x="290" y="80" font-size="11" fill="#3b82f6" font-family="JetBrains Mono" font-weight="600">x₂=0.15</text>
+              <text x="345" y="28" font-size="11" fill="#f472b6" font-family="JetBrains Mono">Ė₂=1.10</text>
+              <!-- промінь (345) (вниз) -->
+              <line x1="210" y1="150" x2="210" y2="260" stroke="#3b82f6" stroke-width="2.5"/>
+              <circle cx="210" cy="260" r="16" fill="#0d1525" stroke="#8b5cf6" stroke-width="2.5"/>
+              <text x="210" y="264" font-size="10" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">(345)</text>
+              <text x="232" y="210" font-size="11" fill="#3b82f6" font-family="JetBrains Mono" font-weight="600">x₍₃₄₅₎=0.092</text>
+              <text x="232" y="226" font-size="11" fill="#f472b6" font-family="JetBrains Mono">Ė₍₃₄₅₎=1.085</text>
+            </svg>
+            <div class="schema-label">Проміжний результат: трипроменева зірка {1, 2, <span style="color:#8b5cf6">(345)</span>}</div>
+          </div>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- КРОК 2: Формула Ульянова -->
+        <h3 style="color: var(--emf-color); margin: 1.5rem 0 1rem; font-size: 1.2rem;">Етап Б. Перетворення зірки(3) → трикутник з ЕРС (Ульянов)</h3>
+
+        <div class="step">
+          <div class="step-label">Крок 3 — Сума опорів</div>
+          <div class="formula-box">
+x<sub>Σ</sub> = x₁ + x₂ + x₍₃₄₅₎ = 0.08 + 0.15 + 0.0923 = <strong>0.3223</strong>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-label">Крок 4 — Опори трикутника</div>
+          <div class="formula-box">
+Y = 1/0.08 + 1/0.15 + 1/0.0923 = 12.500 + 6.667 + 10.833 = <strong>30.000</strong><br><br>
+x₁₂ = 0.08 × 0.15 × 30.0 = <strong>0.360</strong><br>
+x₂₍₃₄₅₎ = 0.15 × 0.0923 × 30.0 = <strong>0.415</strong><br>
+x₍₃₄₅₎₁ = 0.0923 × 0.08 × 30.0 = <strong>0.222</strong>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-label emf">Крок 5 — ЕРС сторін трикутника (формула Ульянова)</div>
+          <div class="formula-box emf-formula">
+<span class="label">Ė₁₂ — ЕРС сторони від вузла 1 до вузла 2</span>
+Ė₁₂ = (Ė₁·(x₂+x₍₃₄₅₎) − (Ė₂+Ė₍₃₄₅₎)·x₁) / x<sub>Σ</sub><br>
+&nbsp;&nbsp; = (1.13×(0.15+0.0923) − (1.10+1.0854)×0.08) / 0.3223<br>
+&nbsp;&nbsp; = (1.13×0.2423 − 2.1854×0.08) / 0.3223<br>
+&nbsp;&nbsp; = (0.2738 − 0.1748) / 0.3223 = <strong>0.307</strong>
+          </div>
+          <div class="formula-box emf-formula">
+<span class="label">Ė₂₍₃₄₅₎ — ЕРС сторони від вузла 2 до об'єднаного вузла</span>
+Ė₂₍₃₄₅₎ = (Ė₂·(x₁+x₍₃₄₅₎) − (Ė₁+Ė₍₃₄₅₎)·x₂) / x<sub>Σ</sub><br>
+&nbsp;&nbsp; = (1.10×0.1723 − 2.2154×0.15) / 0.3223 = <strong>−0.443</strong>
+          </div>
+          <div class="formula-box emf-formula">
+<span class="label">Ė₍₃₄₅₎₁ — ЕРС сторони від об'єднаного вузла до вузла 1</span>
+Ė₍₃₄₅₎₁ = (Ė₍₃₄₅₎·(x₁+x₂) − (Ė₁+Ė₂)·x₍₃₄₅₎) / x<sub>Σ</sub><br>
+&nbsp;&nbsp; = (1.0854×0.23 − 2.23×0.0923) / 0.3223 = <strong>+0.136</strong>
+          </div>
+
+          <div class="note">
+            <strong>Перевірка:</strong> Ė₁₂ + Ė₂₍₃₄₅₎ + Ė₍₃₄₅₎₁ = 0.307 + (−0.443) + 0.136 = <strong>0 ✓</strong> — сума ЕРС по замкненому контуру дорівнює нулю.
+          </div>
+        </div>
+
+        <!-- Проміжна схема: трикутник з опорами та ЕРС -->
+        <div class="schema-container">
+          <div class="schema-box" style="padding: 1.5rem;">
+            <svg viewBox="0 0 500 380" width="480" xmlns="http://www.w3.org/2000/svg">
+              <!-- сторони трикутника -->
+              <line x1="130" y1="50" x2="370" y2="50" stroke="#10b981" stroke-width="3"/>
+              <line x1="370" y1="50" x2="250" y2="330" stroke="#10b981" stroke-width="3"/>
+              <line x1="250" y1="330" x2="130" y2="50" stroke="#10b981" stroke-width="3"/>
+              <!-- стрілки ЕРС -->
+              <polygon points="255,46 265,40 265,52" fill="#f472b6" opacity="0.7"/>
+              <polygon points="318,198 326,192 316,188" fill="#f472b6" opacity="0.7"/>
+              <polygon points="182,192 174,188 184,198" fill="#f472b6" opacity="0.7"/>
+              <!-- вузли -->
+              <circle cx="130" cy="50" r="14" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="370" cy="50" r="14" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="250" cy="330" r="18" fill="#0d1525" stroke="#8b5cf6" stroke-width="2.5"/>
+              <!-- номери -->
+              <text x="130" y="56" font-size="16" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">1</text>
+              <text x="370" y="56" font-size="16" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">2</text>
+              <text x="250" y="335" font-size="12" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">(345)</text>
+              <!-- сторона 1-2 (верхня) -->
+              <text x="250" y="30" font-size="13" fill="#10b981" font-family="JetBrains Mono" font-weight="bold" text-anchor="middle">x₁₂ = 0.360</text>
+              <text x="250" y="80" font-size="13" fill="#f472b6" font-family="JetBrains Mono" text-anchor="middle">Ė₁₂ = +0.307</text>
+              <!-- сторона 2-(345) (права) -->
+              <text x="340" y="192" font-size="13" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₂₍₃₄₅₎ = 0.415</text>
+              <text x="340" y="212" font-size="13" fill="#f472b6" font-family="JetBrains Mono">Ė₂₍₃₄₅₎ = −0.443</text>
+              <!-- сторона (345)-1 (ліва) -->
+              <text x="108" y="192" font-size="13" fill="#10b981" font-family="JetBrains Mono" font-weight="bold" text-anchor="end">x₍₃₄₅₎₁ = 0.222</text>
+              <text x="108" y="212" font-size="13" fill="#f472b6" font-family="JetBrains Mono" text-anchor="end">Ė₍₃₄₅₎₁ = +0.136</text>
+            </svg>
+            <div class="schema-label">Проміжний результат: еквівалентний трикутник {1, 2, <span style="color:#8b5cf6">(345)</span>} — опори та ЕРС (Ульянов)</div>
+          </div>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- КРОК 3: Згортання -->
+        <h3 style="color: var(--accent3); margin: 1.5rem 0 1rem; font-size: 1.2rem;">Етап В. Згортання трикутника до однієї гілки</h3>
+
+        <div class="step">
+          <div class="step-label">Крок 6 — Виключення вузла (345)</div>
+          <p>Вузол (345) з'єднаний з вузлами 1 та 2 двома гілками. Послідовне з'єднання цих гілок дає <strong>обхідний шлях</strong> від 1 до 2 через (345):</p>
+          <div class="formula-box">
+<span class="label">Послідовний опір обхідного шляху</span>
+x<sub>обх</sub> = x₍₃₄₅₎₁ + x₂₍₃₄₅₎ = 0.222 + 0.415 = <strong>0.637</strong>
+          </div>
+          <p>ЕРС обхідного шляху: оскільки Ė₁₂ + Ė₂₍₃₄₅₎ + Ė₍₃₄₅₎₁ = 0, ЕРС шляху 1→(345)→2 дорівнює:</p>
+          <div class="formula-box emf-formula">
+Ė<sub>обх</sub> = −(Ė₂₍₃₄₅₎ + Ė₍₃₄₅₎₁) = −(−0.443 + 0.136) = <strong>0.307</strong> = Ė₁₂ ✓
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-label">Крок 7 — Паралельне з'єднання</div>
+          <p>Пряма гілка та обхідний шлях з'єднуються <strong>паралельно</strong>. Оскільки їх ЕРС однакові (Ė₁₂ = Ė<sub>обх</sub> = 0.307), еквівалентна ЕРС не змінюється:</p>
+          <div class="formula-box">
+<span class="label">Еквівалентний опір</span>
+x<sub>екв</sub> = x₁₂ ‖ x<sub>обх</sub> = 0.360 × 0.637 / (0.360 + 0.637) = <strong>0.230 в.о.</strong>
+          </div>
+          <div class="formula-box emf-formula">
+<span class="label">Еквівалентна ЕРС</span>
+Ė<sub>екв</sub> = Ė₁₂ = <strong>0.307 в.о.</strong>
+          </div>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- РЕЗУЛЬТАТ -->
+        <h3 style="color: var(--accent); margin: 1.5rem 0 1rem; font-size: 1.3rem;">Надперехідний струм</h3>
+
+        <div class="formula-box emf-formula" style="font-size: 1.05rem;">
+<span class="label">Надперехідний зрівняльний струм між генераторами 1 та 2</span>
+I″<sub>12</sub> = Ė<sub>екв</sub> / x<sub>екв</sub> = 0.307 / 0.230 = <strong>1.335 в.о.</strong>
+        </div>
+
+        <div class="result-box" style="font-size: 1.05rem; background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.3); color: var(--accent);">
+          <span class="res-label">Зведена таблиця результатів</span>
+x<sub>екв(1→2)</sub> = 0.230 в.о. &nbsp;|&nbsp; Ė<sub>екв</sub> = 0.307 в.о. &nbsp;|&nbsp; <strong>I″₁₂ = 1.335 в.о.</strong>
+        </div>
+
+        <div class="note">
+          <strong>Фізичний зміст:</strong> ЕРС за Ульяновим Ė₁₂ = 0.307 в.о. значно більша за просту різницю Ė₁−Ė₂ = 0.03, оскільки вона враховує перерозподіл ЕРС усіх генераторів у схемі через спільні опори. Надперехідний струм I″₁₂ = 1.335 в.о. відображає реальне навантаження гілки 1–2 під час перехідного процесу.
+        </div>
+
+        <div class="note">
+          <strong>Роль паралельних шляхів:</strong> Еквівалентний опір x<sub>екв</sub> = 0.230 в.о. менший за прямий опір гілки x₁₂ = 0.360 в.о. завдяки обхідному шляху через об'єднані генератори 3, 4, 5. Цей шлях (x<sub>обх</sub> = 0.637) з'єднаний паралельно з прямою гілкою.
+        </div>
+
+        <!-- Схема процесу -->
+        <h3 style="color: var(--accent3); margin: 2rem 0 1rem; font-size: 1.1rem;">Схема процесу зведення</h3>
+        <div class="schema-container" style="flex-direction: column; gap: 1.5rem;">
+          <div class="schema-box" style="width: 100%; max-width: 720px;">
+            <svg viewBox="0 0 710 120" width="700" xmlns="http://www.w3.org/2000/svg">
+              <rect x="5" y="15" width="115" height="90" rx="10" fill="none" stroke="#3b82f6" stroke-width="2"/>
+              <text x="63" y="38" font-size="11" fill="#fbbf24" text-anchor="middle" font-weight="bold">5 променів</text>
+              <text x="63" y="55" font-size="9" fill="#94a3b8" text-anchor="middle">1, 2, 3, 4, 5</text>
+              <text x="63" y="70" font-size="9" fill="#94a3b8" text-anchor="middle">з ЕРС</text>
+
+              <text x="150" y="60" font-size="22" fill="#f59e0b">→</text>
+              <text x="148" y="38" font-size="8" fill="#f472b6" text-anchor="middle">об'єдн.</text>
+              <text x="148" y="48" font-size="8" fill="#f472b6" text-anchor="middle">4+5, 3+(45)</text>
+
+              <rect x="175" y="15" width="115" height="90" rx="10" fill="none" stroke="#3b82f6" stroke-width="2"/>
+              <text x="233" y="38" font-size="11" fill="#fbbf24" text-anchor="middle" font-weight="bold">3 промені</text>
+              <text x="233" y="55" font-size="9" fill="#94a3b8" text-anchor="middle">1, 2, (345)</text>
+
+              <text x="320" y="60" font-size="22" fill="#f59e0b">→</text>
+              <text x="318" y="38" font-size="8" fill="#f472b6" text-anchor="middle">Ульянов</text>
+
+              <rect x="345" y="15" width="115" height="90" rx="10" fill="none" stroke="#3b82f6" stroke-width="2"/>
+              <text x="403" y="38" font-size="11" fill="#fbbf24" text-anchor="middle" font-weight="bold">Трикутник</text>
+              <text x="403" y="55" font-size="9" fill="#94a3b8" text-anchor="middle">з ЕРС та x</text>
+              <text x="403" y="70" font-size="9" fill="#f472b6" text-anchor="middle">Ė₁₂ = 0.307</text>
+
+              <text x="490" y="60" font-size="22" fill="#f59e0b">→</text>
+              <text x="488" y="38" font-size="8" fill="#f472b6" text-anchor="middle">вилуч.</text>
+              <text x="488" y="48" font-size="8" fill="#f472b6" text-anchor="middle">(345)</text>
+
+              <rect x="515" y="15" width="185" height="90" rx="10" fill="none" stroke="#10b981" stroke-width="2.5"/>
+              <text x="608" y="36" font-size="11" fill="#10b981" text-anchor="middle" font-weight="bold">Результат</text>
+              <text x="608" y="56" font-size="13" fill="#fbbf24" text-anchor="middle" font-family="JetBrains Mono" font-weight="bold">x_екв = 0.230</text>
+              <text x="608" y="74" font-size="13" fill="#f472b6" text-anchor="middle" font-family="JetBrains Mono">Ė_екв = 0.307</text>
+              <text x="608" y="92" font-size="14" fill="#10b981" text-anchor="middle" font-family="JetBrains Mono" font-weight="bold">I″₁₂ = 1.335</text>
+            </svg>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
