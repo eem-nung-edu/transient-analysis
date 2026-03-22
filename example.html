@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Спрощення схем заміщення — Багатопроменева зірка</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e1a;
+  --surface: #111827;
+  --surface2: #1a2236;
+  --accent: #f59e0b;
+  --accent2: #3b82f6;
+  --accent3: #10b981;
+  --accent4: #ef4444;
+  --accent5: #8b5cf6;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --border: #2d3a52;
+  --formula-bg: #0d1525;
+  --highlight: rgba(245,158,11,0.08);
+  --emf-color: #f472b6;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Source Sans 3', sans-serif;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+.grain-overlay {
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999; opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+header {
+  background: linear-gradient(135deg, #0d1525 0%, #1a1040 50%, #0d2535 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 2.5rem 2rem 2rem;
+  position: relative; overflow: hidden;
+}
+header::before {
+  content: ''; position: absolute; top: -50%; right: -10%;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(245,158,11,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+header h1 {
+  font-family: 'Playfair Display', serif; font-weight: 900; font-size: 2.2rem;
+  letter-spacing: -0.5px;
+  background: linear-gradient(90deg, var(--accent), #fbbf24);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 0.3rem;
+}
+header .subtitle { font-size: 1rem; color: var(--text-dim); font-weight: 300; }
+header .meta { margin-top: 0.8rem; font-size: 0.82rem; color: var(--text-dim); opacity: 0.7; }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+.nav-tabs {
+  display: flex; gap: 0.5rem; margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border); overflow-x: auto;
+}
+.nav-tab {
+  padding: 0.7rem 1.2rem; border: none; background: none;
+  color: var(--text-dim); font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.92rem; font-weight: 600; cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all 0.25s; white-space: nowrap;
+}
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+.theory-block {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 2rem; margin-bottom: 2rem; position: relative;
+}
+.theory-block::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+  border-radius: 12px 0 0 12px;
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+}
+.theory-block h2 {
+  font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.5rem;
+  color: var(--accent); margin-bottom: 1rem;
+}
+.theory-block h3 {
+  font-size: 1.15rem; font-weight: 700; color: var(--accent2);
+  margin: 1.5rem 0 0.7rem;
+}
+.theory-block p { margin-bottom: 0.8rem; }
+
+.formula-box {
+  background: var(--formula-bg); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent); border-radius: 8px;
+  padding: 1.2rem 1.5rem; margin: 1rem 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.93rem;
+  line-height: 2; overflow-x: auto; color: #fbbf24;
+}
+.formula-box .label {
+  display: block; font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.8rem; color: var(--text-dim); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;
+}
+.formula-box.emf-formula {
+  border-left-color: var(--emf-color);
+  color: var(--emf-color);
+}
+
+.example-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; margin-bottom: 2.5rem; overflow: hidden;
+}
+.example-header {
+  background: linear-gradient(135deg, var(--surface2), #1e293b);
+  padding: 1.2rem 2rem; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 1rem;
+}
+.example-number {
+  background: var(--accent); color: #000;
+  font-family: 'Playfair Display', serif; font-weight: 900; font-size: 1.1rem;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.example-title { font-size: 1.15rem; font-weight: 700; }
+.example-body { padding: 2rem; }
+
+.step {
+  margin-bottom: 1.5rem; padding-left: 1rem;
+  border-left: 2px solid var(--border);
+}
+.step-label {
+  font-weight: 700; color: var(--accent3); font-size: 0.9rem;
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem;
+}
+.step-label.emf { color: var(--emf-color); }
+.step p { margin-bottom: 0.5rem; }
+
+.schema-container {
+  display: flex; align-items: center; justify-content: center;
+  gap: 2rem; margin: 1.5rem 0; flex-wrap: wrap;
+}
+.schema-box {
+  background: var(--formula-bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1rem; text-align: center;
+}
+.schema-box svg { max-width: 100%; height: auto; }
+.schema-label { font-size: 0.82rem; color: var(--text-dim); margin-top: 0.5rem; font-weight: 600; }
+.arrow-between { font-size: 2rem; color: var(--accent); flex-shrink: 0; }
+
+.result-box {
+  background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px; padding: 1rem 1.5rem; margin: 1rem 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;
+  color: var(--accent3); line-height: 2;
+}
+.result-box .res-label {
+  display: block; font-family: 'Source Sans 3', sans-serif; font-weight: 700;
+  font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 0.3rem;
+}
+.result-box.emf-result {
+  background: rgba(244, 114, 182, 0.08);
+  border-color: rgba(244, 114, 182, 0.3);
+  color: var(--emf-color);
+}
+
+.note {
+  background: rgba(139,92,246,0.07); border-left: 3px solid var(--accent5);
+  border-radius: 0 8px 8px 0; padding: 1rem 1.2rem; margin: 1rem 0;
+  font-size: 0.92rem; color: #c4b5fd;
+}
+.note strong { color: var(--accent5); }
+
+.data-table {
+  width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem;
+}
+.data-table th {
+  background: var(--surface2); color: var(--accent); font-weight: 700;
+  padding: 0.7rem 1rem; text-align: left; border-bottom: 2px solid var(--accent);
+}
+.data-table td {
+  padding: 0.6rem 1rem; border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace; font-size: 0.88rem;
+}
+.data-table tr:hover td { background: var(--highlight); }
+
+.section-divider {
+  border: none; border-top: 1px dashed var(--border);
+  margin: 2.5rem 0;
+}
+
+.emf-highlight {
+  color: var(--emf-color);
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  header h1 { font-size: 1.5rem; }
+  .schema-container { flex-direction: column; }
+  .arrow-between { transform: rotate(90deg); }
+  .example-body { padding: 1.2rem; }
+}
+</style>
+</head>
+<body>
+<div class="grain-overlay"></div>
+
+<header>
+  <h1>Спрощення схем заміщення при КЗ</h1>
+  <div class="subtitle">Перетворення багатопроменевої зірки з ЕРС — індуктивні опори та ЕРС</div>
+  <div class="meta">Спеціальність 141 — Електроенергетика, електротехніка та електромеханіка &nbsp;|&nbsp; Перехідні процеси в СЕП</div>
+</header>
+
+<div class="container">
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('theory')">Теорія</button>
+    <button class="nav-tab" onclick="showTab('ex1')">Приклад 1 — 4 промені</button>
+    <button class="nav-tab" onclick="showTab('ex2')">Приклад 2 — 5 променів</button>
+  </div>
+
+  <!-- ═══════════════ ТЕОРІЯ ═══════════════ -->
+  <div id="theory" class="tab-content active">
+    <div class="theory-block">
+      <h2>Заміна багатопроменевої зірки багатокутником</h2>
+      <p>При розрахунку струмів КЗ схеми заміщення містять лише <strong>індуктивні опори (x)</strong> та <strong>ЕРС (Ė)</strong> джерел. Перетворення багатопроменевої зірки у повний багатокутник із діагоналями включає визначення як <strong>еквівалентних опорів</strong>, так і <strong>еквівалентних ЕРС</strong> кожної сторони.</p>
+
+      <h3>Формули опорів (n променів)</h3>
+      <div class="formula-box">
+        <span class="label">Опір між вузлами i та j</span>
+        x<sub>ij</sub> = x<sub>i</sub> · x<sub>j</sub> · Y<sub>1–n</sub>
+      </div>
+      <div class="formula-box">
+        <span class="label">Сумарна провідність</span>
+        Y<sub>1–n</sub> = Σ (1 / x<sub>k</sub>) , &nbsp; k = 1, 2, …, n
+      </div>
+
+      <h3>Формула ЕРС сторін багатокутника</h3>
+      <p>При перетворенні зірки з ЕРС у багатокутник кожна сторона (діагональ) отримує еквівалентну ЕРС. Для забезпечення еквівалентності при будь-якому зовнішньому навантаженні, ЕРС сторони між вузлами i та j визначається як <strong>різниця ЕРС</strong> відповідних променів:</p>
+
+      <div class="formula-box emf-formula">
+        <span class="label">ЕРС сторони багатокутника між вузлами i та j</span>
+        Ė<sub>ij</sub> = Ė<sub>i</sub> − Ė<sub>j</sub>
+      </div>
+
+      <p>Ця формула є <strong>загальною для будь-якої кількості n променів</strong>. Вона випливає з умови еквівалентності: при будь-яких зовнішніх напругах на затискачах, струми в зовнішньому колі мають бути однаковими для зірки і багатокутника. Додаткова умова — відсутність зрівняльних струмів (сума ЕРС в кожному замкненому контурі багатокутника дорівнює нулю).</p>
+
+      <div class="note">
+        <strong>Фізичний зміст:</strong> ЕРС сторони Ė<sub>ij</sub> = Ė<sub>i</sub> − Ė<sub>j</sub> показує «рушійну силу» між двома джерелами. Якщо Ė<sub>ij</sub> > 0, це означає що джерело i «сильніше» за j, і еквівалентна ЕРС штовхає струм від i до j. Якщо ЕРС генераторів мало відрізняються, еквівалентні ЕРС сторін будуть малими.
+      </div>
+
+      <h3>Напрямок ЕРС у сторонах багатокутника</h3>
+      <p>Еквівалентна ЕРС Ė<sub>ij</sub> спрямована <strong>від вузла i до вузла j</strong>, тобто «штовхає» струм від джерела з більшою ЕРС до джерела з меншою. Від'ємне значення Ė<sub>ij</sub> означає, що реальний напрямок ЕРС протилежний — від j до i.</p>
+
+      <h3>Кількість елементів багатокутника</h3>
+      <div class="formula-box">
+        <span class="label">Кількість сторін + діагоналей</span>
+        C(n, 2) = n·(n−1)/2 &nbsp; → &nbsp; n=4: 6 елементів, &nbsp; n=5: 10 елементів
+      </div>
+
+      <div class="schema-container">
+        <div class="schema-box">
+          <svg viewBox="0 0 220 220" width="220" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="110" cy="110" r="4" fill="#f59e0b"/>
+            <text x="120" y="105" font-size="12" fill="#94a3b8" font-family="JetBrains Mono">0</text>
+            <line x1="110" y1="110" x2="110" y2="20" stroke="#3b82f6" stroke-width="2"/>
+            <line x1="110" y1="110" x2="200" y2="110" stroke="#3b82f6" stroke-width="2"/>
+            <line x1="110" y1="110" x2="110" y2="200" stroke="#3b82f6" stroke-width="2"/>
+            <line x1="110" y1="110" x2="20" y2="110" stroke="#3b82f6" stroke-width="2"/>
+            <circle cx="110" cy="20" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
+            <circle cx="200" cy="110" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
+            <circle cx="110" cy="200" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
+            <circle cx="20" cy="110" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
+            <text x="98" y="14" font-size="12" fill="#fbbf24" font-weight="bold">Ė₁,x₁</text>
+            <text x="205" y="114" font-size="12" fill="#fbbf24" font-weight="bold">Ė₂,x₂</text>
+            <text x="98" y="218" font-size="12" fill="#fbbf24" font-weight="bold">Ė₃,x₃</text>
+            <text x="2" y="100" font-size="12" fill="#fbbf24" font-weight="bold">Ė₄,x₄</text>
+          </svg>
+          <div class="schema-label">Зірка (4 промені з ЕРС)</div>
+        </div>
+        <div class="arrow-between">⟹</div>
+        <div class="schema-box">
+          <svg viewBox="0 0 260 220" width="240" xmlns="http://www.w3.org/2000/svg">
+            <line x1="110" y1="20" x2="200" y2="110" stroke="#10b981" stroke-width="2"/>
+            <line x1="200" y1="110" x2="110" y2="200" stroke="#10b981" stroke-width="2"/>
+            <line x1="110" y1="200" x2="20" y2="110" stroke="#10b981" stroke-width="2"/>
+            <line x1="20" y1="110" x2="110" y2="20" stroke="#10b981" stroke-width="2"/>
+            <line x1="110" y1="20" x2="110" y2="200" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,3"/>
+            <line x1="20" y1="110" x2="200" y2="110" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,3"/>
+            <circle cx="110" cy="20" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
+            <circle cx="200" cy="110" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
+            <circle cx="110" cy="200" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
+            <circle cx="20" cy="110" r="6" fill="none" stroke="#f59e0b" stroke-width="2"/>
+            <text x="102" y="14" font-size="13" fill="#fbbf24" font-weight="bold">1</text>
+            <text x="206" y="114" font-size="13" fill="#fbbf24" font-weight="bold">2</text>
+            <text x="102" y="218" font-size="13" fill="#fbbf24" font-weight="bold">3</text>
+            <text x="2" y="114" font-size="13" fill="#fbbf24" font-weight="bold">4</text>
+            <text x="155" y="58" font-size="9" fill="#10b981" font-family="JetBrains Mono">x₁₂, Ė₁₂</text>
+            <text x="155" y="172" font-size="9" fill="#10b981" font-family="JetBrains Mono">x₂₃, Ė₂₃</text>
+            <text x="22" y="172" font-size="9" fill="#10b981" font-family="JetBrains Mono">x₃₄, Ė₃₄</text>
+            <text x="30" y="58" font-size="9" fill="#10b981" font-family="JetBrains Mono">x₄₁, Ė₄₁</text>
+            <text x="112" y="115" font-size="9" fill="#ef4444" font-family="JetBrains Mono">x₁₃,Ė₁₃</text>
+            <text x="96" y="130" font-size="9" fill="#ef4444" font-family="JetBrains Mono">x₂₄,Ė₂₄</text>
+          </svg>
+          <div class="schema-label">Багатокутник (x<sub>ij</sub> та Ė<sub>ij</sub>)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ ПРИКЛАД 1 — 4 промені ═══════════════ -->
+  <div id="ex1" class="tab-content">
+    <div class="example-card">
+      <div class="example-header">
+        <div class="example-number">1</div>
+        <div class="example-title">Чотирипроменева зірка — повне перетворення (опори + ЕРС)</div>
+      </div>
+      <div class="example-body">
+
+        <p><strong>Дано:</strong> Схема заміщення при розрахунку КЗ містить вузол, до якого сходяться 4 гілки:</p>
+
+        <table class="data-table">
+          <thead><tr><th>Промінь</th><th>Індуктивний опір (в.о.)</th><th>ЕРС (в.о.)</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>x₁ = 0.10</td><td>Ė₁ = 1.13</td></tr>
+            <tr><td>2</td><td>x₂ = 0.20</td><td>Ė₂ = 1.08</td></tr>
+            <tr><td>3</td><td>x₃ = 0.25</td><td>Ė₃ = 1.10</td></tr>
+            <tr><td>4</td><td>x₄ = 0.50</td><td>Ė₄ = 1.05</td></tr>
+          </tbody>
+        </table>
+
+        <p><strong>Потрібно:</strong> Замінити зірку еквівалентним багатокутником — знайти всі 6 опорів та 6 ЕРС.</p>
+
+        <div class="schema-container">
+          <div class="schema-box">
+            <svg viewBox="0 0 360 340" width="340" xmlns="http://www.w3.org/2000/svg">
+              <!-- центральний вузол -->
+              <circle cx="180" cy="165" r="5" fill="#f59e0b"/>
+              <text x="188" y="160" font-size="11" fill="#94a3b8" font-family="JetBrains Mono">0</text>
+              <!-- промінь 1 (вгору) -->
+              <line x1="180" y1="165" x2="180" y2="35" stroke="#3b82f6" stroke-width="2.5"/>
+              <circle cx="180" cy="35" r="10" fill="none" stroke="#f59e0b" stroke-width="2"/>
+              <circle cx="180" cy="35" r="18" fill="none" stroke="#f472b6" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <text x="170" y="12" font-size="13" fill="#fbbf24" font-weight="bold" font-family="JetBrains Mono">1</text>
+              <text x="200" y="75" font-size="11" fill="#3b82f6" font-family="JetBrains Mono" font-weight="600">x₁=0.10</text>
+              <text x="200" y="55" font-size="11" fill="#f472b6" font-family="JetBrains Mono" font-weight="600">Ė₁=1.13</text>
+              <!-- промінь 2 (вправо) -->
+              <line x1="180" y1="165" x2="320" y2="165" stroke="#3b82f6" stroke-width="2.5"/>
+              <circle cx="320" cy="165" r="10" fill="none" stroke="#f59e0b" stroke-width="2"/>
+              <circle cx="320" cy="165" r="18" fill="none" stroke="#f472b6" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <text x="336" y="170" font-size="13" fill="#fbbf24" font-weight="bold" font-family="JetBrains Mono">2</text>
+              <text x="238" y="155" font-size="11" fill="#3b82f6" font-family="JetBrains Mono" font-weight="600">x₂=0.20</text>
+              <text x="238" y="190" font-size="11" fill="#f472b6" font-family="JetBrains Mono" font-weight="600">Ė₂=1.08</text>
+              <!-- промінь 3 (вниз) -->
+              <line x1="180" y1="165" x2="180" y2="295" stroke="#3b82f6" stroke-width="2.5"/>
+              <circle cx="180" cy="295" r="10" fill="none" stroke="#f59e0b" stroke-width="2"/>
+              <circle cx="180" cy="295" r="18" fill="none" stroke="#f472b6" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <text x="170" y="328" font-size="13" fill="#fbbf24" font-weight="bold" font-family="JetBrains Mono">3</text>
+              <text x="200" y="255" font-size="11" fill="#3b82f6" font-family="JetBrains Mono" font-weight="600">x₃=0.25</text>
+              <text x="200" y="275" font-size="11" fill="#f472b6" font-family="JetBrains Mono" font-weight="600">Ė₃=1.10</text>
+              <!-- промінь 4 (вліво) -->
+              <line x1="180" y1="165" x2="40" y2="165" stroke="#3b82f6" stroke-width="2.5"/>
+              <circle cx="40" cy="165" r="10" fill="none" stroke="#f59e0b" stroke-width="2"/>
+              <circle cx="40" cy="165" r="18" fill="none" stroke="#f472b6" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <text x="10" y="170" font-size="13" fill="#fbbf24" font-weight="bold" font-family="JetBrains Mono">4</text>
+              <text x="80" y="155" font-size="11" fill="#3b82f6" font-family="JetBrains Mono" font-weight="600">x₄=0.50</text>
+              <text x="80" y="190" font-size="11" fill="#f472b6" font-family="JetBrains Mono" font-weight="600">Ė₄=1.05</text>
+            </svg>
+            <div class="schema-label">Вихідна чотирипроменева зірка з ЕРС</div>
+          </div>
+        </div>
+
+        <!-- ЧАСТИНА А: ОПОРИ -->
+        <h3 style="color: var(--accent2); margin: 1.5rem 0 1rem; font-size: 1.2rem;">А. Розрахунок еквівалентних опорів</h3>
+
+        <div class="step">
+          <div class="step-label">Крок 1 — Сума провідностей</div>
+          <div class="formula-box">
+Y<sub>1–4</sub> = 1/x₁ + 1/x₂ + 1/x₃ + 1/x₄<br>
+Y<sub>1–4</sub> = 1/0.10 + 1/0.20 + 1/0.25 + 1/0.50<br>
+Y<sub>1–4</sub> = 10.0 + 5.0 + 4.0 + 2.0 = <strong>21.0</strong>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-label">Крок 2 — Опори сторін та діагоналей</div>
+          <p>Для 4 променів маємо C(4,2) = 6 елементів:</p>
+          <div class="formula-box">
+x₁₂ = x₁ · x₂ · Y = 0.10 × 0.20 × 21.0 = <strong>0.420</strong><br>
+x₁₃ = x₁ · x₃ · Y = 0.10 × 0.25 × 21.0 = <strong>0.525</strong><br>
+x₁₄ = x₁ · x₄ · Y = 0.10 × 0.50 × 21.0 = <strong>1.050</strong><br>
+x₂₃ = x₂ · x₃ · Y = 0.20 × 0.25 × 21.0 = <strong>1.050</strong><br>
+x₂₄ = x₂ · x₄ · Y = 0.20 × 0.50 × 21.0 = <strong>2.100</strong><br>
+x₃₄ = x₃ · x₄ · Y = 0.25 × 0.50 × 21.0 = <strong>2.625</strong>
+          </div>
+        </div>
+
+        <div class="result-box">
+          <span class="res-label">Еквівалентні опори багатокутника</span>
+x₁₂ = 0.420 &nbsp;|&nbsp; x₁₃ = 0.525 &nbsp;|&nbsp; x₁₄ = 1.050<br>
+x₂₃ = 1.050 &nbsp;|&nbsp; x₂₄ = 2.100 &nbsp;|&nbsp; x₃₄ = 2.625 &nbsp; (в.о.)
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- ЧАСТИНА Б: ЕРС -->
+        <h3 style="color: var(--emf-color); margin: 1.5rem 0 1rem; font-size: 1.2rem;">Б. Розрахунок еквівалентних ЕРС</h3>
+
+        <p>Еквівалентна ЕРС кожної сторони багатокутника визначається як різниця ЕРС відповідних променів зірки: <span class="emf-highlight">Ė<sub>ij</sub> = Ė<sub>i</sub> − Ė<sub>j</sub></span></p>
+
+        <div class="step">
+          <div class="step-label emf">Крок 3 — ЕРС усіх 6 сторін</div>
+          <div class="formula-box emf-formula">
+Ė₁₂ = Ė₁ − Ė₂ = 1.13 − 1.08 = <strong>+0.050</strong><br>
+Ė₁₃ = Ė₁ − Ė₃ = 1.13 − 1.10 = <strong>+0.030</strong><br>
+Ė₁₄ = Ė₁ − Ė₄ = 1.13 − 1.05 = <strong>+0.080</strong><br>
+Ė₂₃ = Ė₂ − Ė₃ = 1.08 − 1.10 = <strong>−0.020</strong><br>
+Ė₂₄ = Ė₂ − Ė₄ = 1.08 − 1.05 = <strong>+0.030</strong><br>
+Ė₃₄ = Ė₃ − Ė₄ = 1.10 − 1.05 = <strong>+0.050</strong>
+          </div>
+        </div>
+
+        <div class="result-box emf-result">
+          <span class="res-label">Еквівалентні ЕРС багатокутника</span>
+Ė₁₂ = +0.050 &nbsp;|&nbsp; Ė₁₃ = +0.030 &nbsp;|&nbsp; Ė₁₄ = +0.080<br>
+Ė₂₃ = −0.020 &nbsp;|&nbsp; Ė₂₄ = +0.030 &nbsp;|&nbsp; Ė₃₄ = +0.050 &nbsp; (в.о.)
+        </div>
+
+        <div class="note">
+          <strong>Аналіз результатів:</strong><br>
+          • Найбільша ЕРС Ė₁₄ = +0.080 — між генераторами з найбільшою різницею ЕРС (Ė₁=1.13 і Ė₄=1.05).<br>
+          • Від'ємна Ė₂₃ = −0.020 — ЕРС генератора 3 (1.10) більше за ЕРС генератора 2 (1.08), тому реальний напрямок ЕРС — від вузла 3 до вузла 2.<br>
+          • Сума ЕРС в кожному замкненому контурі = 0: наприклад, Ė₁₂ + Ė₂₃ − Ė₁₃ = 0.050 + (−0.020) − 0.030 = 0 ✓
+        </div>
+
+        <!-- Підсумкова схема -->
+        <div class="schema-container">
+          <div class="schema-box" style="padding: 1.5rem;">
+            <svg viewBox="0 0 460 440" width="440" xmlns="http://www.w3.org/2000/svg">
+              <!-- квадрат з діагоналями -->
+              <line x1="230" y1="40" x2="410" y2="220" stroke="#10b981" stroke-width="2.5"/>
+              <line x1="410" y1="220" x2="230" y2="400" stroke="#10b981" stroke-width="2.5"/>
+              <line x1="230" y1="400" x2="50" y2="220" stroke="#10b981" stroke-width="2.5"/>
+              <line x1="50" y1="220" x2="230" y2="40" stroke="#10b981" stroke-width="2.5"/>
+              <line x1="230" y1="40" x2="230" y2="400" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8,4"/>
+              <line x1="50" y1="220" x2="410" y2="220" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8,4"/>
+              <!-- вузли -->
+              <circle cx="230" cy="40" r="12" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="410" cy="220" r="12" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="230" cy="400" r="12" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="50" cy="220" r="12" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <text x="230" y="22" font-size="17" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">1</text>
+              <text x="434" y="226" font-size="17" fill="#fbbf24" font-weight="bold" font-family="JetBrains Mono">2</text>
+              <text x="230" y="432" font-size="17" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">3</text>
+              <text x="16" y="226" font-size="17" fill="#fbbf24" font-weight="bold" font-family="JetBrains Mono">4</text>
+              <!-- Сторони: опори + ЕРС -->
+              <!-- 1-2 (верх-право) -->
+              <text x="330" y="108" font-size="13" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₁₂=0.420</text>
+              <text x="330" y="126" font-size="13" fill="#f472b6" font-family="JetBrains Mono">Ė₁₂=+0.050</text>
+              <!-- 2-3 (право-низ) -->
+              <text x="330" y="330" font-size="13" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₂₃=1.050</text>
+              <text x="330" y="348" font-size="13" fill="#f472b6" font-family="JetBrains Mono">Ė₂₃=−0.020</text>
+              <!-- 3-4 (низ-ліво) -->
+              <text x="62" y="330" font-size="13" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₃₄=2.625</text>
+              <text x="62" y="348" font-size="13" fill="#f472b6" font-family="JetBrains Mono">Ė₃₄=+0.050</text>
+              <!-- 4-1 (ліво-верх) -->
+              <text x="62" y="108" font-size="13" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₄₁=1.050</text>
+              <text x="62" y="126" font-size="13" fill="#f472b6" font-family="JetBrains Mono">Ė₄₁=−0.080</text>
+              <!-- Діагоналі -->
+              <text x="240" y="210" font-size="13" fill="#ef4444" font-family="JetBrains Mono" font-weight="bold">x₁₃=0.525</text>
+              <text x="240" y="228" font-size="13" fill="#f472b6" font-family="JetBrains Mono">Ė₁₃=+0.030</text>
+              <text x="240" y="256" font-size="13" fill="#ef4444" font-family="JetBrains Mono" font-weight="bold">x₂₄=2.100</text>
+              <text x="240" y="274" font-size="13" fill="#f472b6" font-family="JetBrains Mono">Ė₂₄=+0.030</text>
+            </svg>
+            <div class="schema-label">Повний еквівалентний багатокутник (опори та ЕРС)</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-label">Перевірка — контурні рівняння</div>
+          <p>Оскільки ЕРС визначені за умови відсутності зрівняльних струмів, <strong>алгебраїчна сума ЕРС в будь-якому замкненому контурі має дорівнювати нулю</strong> (другий закон Кірхгофа при I=0). Обходимо контур послідовно: якщо напрямок ЕРС збігається з обходом — беремо «+», якщо протилежний — «−». Наприклад, у контурі 1→2→3→1: Ė₁₂ і Ė₂₃ збігаються з обходом, а Ė₁₃ має напрямок 1→3, що протилежний поверненню 3→1, тому віднімаємо.</p>
+          <div class="formula-box emf-formula">
+Контур 1-2-3: Ė₁₂ + Ė₂₃ − Ė₁₃ = 0.050 + (−0.020) − 0.030 = <strong>0 ✓</strong><br>
+Контур 1-2-4: Ė₁₂ + Ė₂₄ − Ė₁₄ = 0.050 + 0.030 − 0.080 = <strong>0 ✓</strong><br>
+Контур 1-3-4: Ė₁₃ + Ė₃₄ − Ė₁₄ = 0.030 + 0.050 − 0.080 = <strong>0 ✓</strong>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-label">Перевірка — вузлові рівняння</div>
+          <p>Ця перевірка гарантує, що <strong>струми в еквівалентному багатокутнику відповідають струмам вихідної зірки</strong> при будь-якому зовнішньому навантаженні. Для кожного вузла k виконується рівняння балансу: сума відношень Ė<sub>kj</sub>/x<sub>j</sub> по всіх сусідніх вузлах j має дорівнювати Y·Ė<sub>k</sub> − S, де S = Σ(Ė<sub>m</sub>/x<sub>m</sub>) — сума по всіх променях. По суті, ми перевіряємо, що напруга вузла центру зірки V₀ правильно відтворюється багатокутником.</p>
+          <div class="formula-box">
+Σ(Ė<sub>m</sub>/x<sub>m</sub>) = 1.13/0.10 + 1.08/0.20 + 1.10/0.25 + 1.05/0.50 = 11.30 + 5.40 + 4.40 + 2.10 = <strong>23.20</strong><br><br>
+Вузол 1: Ė₁₂/x₂ + Ė₁₃/x₃ + Ė₁₄/x₄ = 0.050/0.20 + 0.030/0.25 + 0.080/0.50<br>
+&nbsp; = 0.250 + 0.120 + 0.160 = 0.530<br>
+&nbsp; Y·Ė₁ − S = 21.0 × 1.13 − 23.20 = 23.73 − 23.20 = <strong>0.530 ✓</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ ПРИКЛАД 2 — 5 променів ═══════════════ -->
+  <div id="ex2" class="tab-content">
+    <div class="example-card">
+      <div class="example-header">
+        <div class="example-number">2</div>
+        <div class="example-title">П'ятипроменева зірка — повне перетворення (опори + ЕРС)</div>
+      </div>
+      <div class="example-body">
+
+        <p><strong>Дано:</strong> Складна схема заміщення при КЗ має вузол, де сходяться 5 гілок:</p>
+
+        <table class="data-table">
+          <thead><tr><th>Промінь</th><th>Індуктивний опір (в.о.)</th><th>ЕРС (в.о.)</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>x₁ = 0.08</td><td>Ė₁ = 1.13</td></tr>
+            <tr><td>2</td><td>x₂ = 0.15</td><td>Ė₂ = 1.10</td></tr>
+            <tr><td>3</td><td>x₃ = 0.20</td><td>Ė₃ = 1.08</td></tr>
+            <tr><td>4</td><td>x₄ = 0.30</td><td>Ė₄ = 1.12</td></tr>
+            <tr><td>5</td><td>x₅ = 0.40</td><td>Ė₅ = 1.05</td></tr>
+          </tbody>
+        </table>
+
+        <p><strong>Потрібно:</strong> Визначити всі 10 опорів та 10 ЕРС еквівалентного багатокутника.</p>
+
+        <div class="schema-container">
+          <div class="schema-box">
+            <svg viewBox="0 0 380 330" width="340" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="180" cy="160" r="5" fill="#f59e0b"/>
+              <!-- промінь 1 (top) -->
+              <line x1="180" y1="160" x2="180" y2="30" stroke="#3b82f6" stroke-width="2.5"/>
+              <circle cx="180" cy="30" r="8" fill="none" stroke="#f59e0b" stroke-width="2"/>
+              <circle cx="180" cy="30" r="16" fill="none" stroke="#f472b6" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <text x="168" y="10" font-size="12" fill="#fbbf24" font-weight="bold">1</text>
+              <text x="198" y="72" font-size="9.5" fill="#3b82f6" font-family="JetBrains Mono" font-weight="600">x₁=0.08</text>
+              <text x="198" y="58" font-size="9.5" fill="#f472b6" font-family="JetBrains Mono" font-weight="600">Ė₁=1.13</text>
+              <!-- промінь 2 (top-right) -->
+              <line x1="180" y1="160" x2="310" y2="100" stroke="#3b82f6" stroke-width="2.5"/>
+              <circle cx="310" cy="100" r="8" fill="none" stroke="#f59e0b" stroke-width="2"/>
+              <circle cx="310" cy="100" r="16" fill="none" stroke="#f472b6" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <text x="324" y="100" font-size="12" fill="#fbbf24" font-weight="bold">2</text>
+              <text x="253" y="112" font-size="9.5" fill="#3b82f6" font-family="JetBrains Mono" font-weight="600">x₂=0.15</text>
+              <text x="253" y="126" font-size="9.5" fill="#f472b6" font-family="JetBrains Mono" font-weight="600">Ė₂=1.10</text>
+              <!-- промінь 3 (bottom-right) -->
+              <line x1="180" y1="160" x2="268" y2="270" stroke="#3b82f6" stroke-width="2.5"/>
+              <circle cx="268" cy="270" r="8" fill="none" stroke="#f59e0b" stroke-width="2"/>
+              <circle cx="268" cy="270" r="16" fill="none" stroke="#f472b6" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <text x="282" y="278" font-size="12" fill="#fbbf24" font-weight="bold">3</text>
+              <text x="235" y="225" font-size="9.5" fill="#3b82f6" font-family="JetBrains Mono" font-weight="600">x₃=0.20</text>
+              <text x="235" y="239" font-size="9.5" fill="#f472b6" font-family="JetBrains Mono" font-weight="600">Ė₃=1.08</text>
+              <!-- промінь 4 (bottom-left) -->
+              <line x1="180" y1="160" x2="92" y2="270" stroke="#3b82f6" stroke-width="2.5"/>
+              <circle cx="92" cy="270" r="8" fill="none" stroke="#f59e0b" stroke-width="2"/>
+              <circle cx="92" cy="270" r="16" fill="none" stroke="#f472b6" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <text x="66" y="278" font-size="12" fill="#fbbf24" font-weight="bold">4</text>
+              <text x="95" y="239" font-size="9.5" fill="#f472b6" font-family="JetBrains Mono" font-weight="600">Ė₄=1.12</text>
+              <text x="95" y="225" font-size="9.5" fill="#3b82f6" font-family="JetBrains Mono" font-weight="600">x₄=0.30</text>
+              <!-- промінь 5 (top-left) -->
+              <line x1="180" y1="160" x2="50" y2="100" stroke="#3b82f6" stroke-width="2.5"/>
+              <circle cx="50" cy="100" r="8" fill="none" stroke="#f59e0b" stroke-width="2"/>
+              <circle cx="50" cy="100" r="16" fill="none" stroke="#f472b6" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <text x="25" y="100" font-size="12" fill="#fbbf24" font-weight="bold">5</text>
+              <text x="72" y="112" font-size="9.5" fill="#3b82f6" font-family="JetBrains Mono" font-weight="600">x₅=0.40</text>
+              <text x="72" y="126" font-size="9.5" fill="#f472b6" font-family="JetBrains Mono" font-weight="600">Ė₅=1.05</text>
+            </svg>
+            <div class="schema-label">Вихідна зірка (5 променів з ЕРС)</div>
+          </div>
+        </div>
+
+        <!-- ЧАСТИНА А: ОПОРИ -->
+        <h3 style="color: var(--accent2); margin: 1.5rem 0 1rem; font-size: 1.2rem;">А. Розрахунок еквівалентних опорів</h3>
+
+        <div class="step">
+          <div class="step-label">Крок 1 — Сума провідностей</div>
+          <div class="formula-box">
+Y<sub>1–5</sub> = 1/0.08 + 1/0.15 + 1/0.20 + 1/0.30 + 1/0.40<br>
+Y<sub>1–5</sub> = 12.500 + 6.667 + 5.000 + 3.333 + 2.500 = <strong>30.000</strong>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-label">Крок 2 — Опори 10 сторін та діагоналей</div>
+          <div class="formula-box">
+x₁₂ = 0.08 × 0.15 × 30.0 = <strong>0.360</strong><br>
+x₁₃ = 0.08 × 0.20 × 30.0 = <strong>0.480</strong><br>
+x₁₄ = 0.08 × 0.30 × 30.0 = <strong>0.720</strong><br>
+x₁₅ = 0.08 × 0.40 × 30.0 = <strong>0.960</strong><br>
+x₂₃ = 0.15 × 0.20 × 30.0 = <strong>0.900</strong><br>
+x₂₄ = 0.15 × 0.30 × 30.0 = <strong>1.350</strong><br>
+x₂₅ = 0.15 × 0.40 × 30.0 = <strong>1.800</strong><br>
+x₃₄ = 0.20 × 0.30 × 30.0 = <strong>1.800</strong><br>
+x₃₅ = 0.20 × 0.40 × 30.0 = <strong>2.400</strong><br>
+x₄₅ = 0.30 × 0.40 × 30.0 = <strong>3.600</strong>
+          </div>
+        </div>
+
+        <div class="result-box">
+          <span class="res-label">Еквівалентні опори багатокутника</span>
+Сторони: x₁₂=0.360 | x₂₃=0.900 | x₃₄=1.800 | x₄₅=3.600 | x₅₁=0.960<br>
+Діагоналі: x₁₃=0.480 | x₁₄=0.720 | x₂₄=1.350 | x₂₅=1.800 | x₃₅=2.400 &nbsp;(в.о.)
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- ЧАСТИНА Б: ЕРС -->
+        <h3 style="color: var(--emf-color); margin: 1.5rem 0 1rem; font-size: 1.2rem;">Б. Розрахунок еквівалентних ЕРС</h3>
+
+        <div class="step">
+          <div class="step-label emf">Крок 3 — ЕРС усіх 10 сторін</div>
+          <p>Застосовуємо формулу <span class="emf-highlight">Ė<sub>ij</sub> = Ė<sub>i</sub> − Ė<sub>j</sub></span> для всіх пар:</p>
+          <div class="formula-box emf-formula">
+Ė₁₂ = Ė₁ − Ė₂ = 1.13 − 1.10 = <strong>+0.030</strong><br>
+Ė₁₃ = Ė₁ − Ė₃ = 1.13 − 1.08 = <strong>+0.050</strong><br>
+Ė₁₄ = Ė₁ − Ė₄ = 1.13 − 1.12 = <strong>+0.010</strong><br>
+Ė₁₅ = Ė₁ − Ė₅ = 1.13 − 1.05 = <strong>+0.080</strong><br>
+Ė₂₃ = Ė₂ − Ė₃ = 1.10 − 1.08 = <strong>+0.020</strong><br>
+Ė₂₄ = Ė₂ − Ė₄ = 1.10 − 1.12 = <strong>−0.020</strong><br>
+Ė₂₅ = Ė₂ − Ė₅ = 1.10 − 1.05 = <strong>+0.050</strong><br>
+Ė₃₄ = Ė₃ − Ė₄ = 1.08 − 1.12 = <strong>−0.040</strong><br>
+Ė₃₅ = Ė₃ − Ė₅ = 1.08 − 1.05 = <strong>+0.030</strong><br>
+Ė₄₅ = Ė₄ − Ė₅ = 1.12 − 1.05 = <strong>+0.070</strong>
+          </div>
+        </div>
+
+        <div class="result-box emf-result">
+          <span class="res-label">Еквівалентні ЕРС багатокутника</span>
+Ė₁₂=+0.030 | Ė₁₃=+0.050 | Ė₁₄=+0.010 | Ė₁₅=+0.080 | Ė₂₃=+0.020<br>
+Ė₂₄=−0.020 | Ė₂₅=+0.050 | Ė₃₄=−0.040 | Ė₃₅=+0.030 | Ė₄₅=+0.070 &nbsp; (в.о.)
+        </div>
+
+        <div class="note">
+          <strong>Аналіз результатів:</strong><br>
+          • <strong>Ė₁₅ = +0.080</strong> — найбільша ЕРС, бо генератор 1 (Ė₁=1.13) має найвищу ЕРС, а генератор 5 (Ė₅=1.05) — найнижчу.<br>
+          • <strong>Ė₁₄ = +0.010</strong> — найменша за модулем, бо Ė₁=1.13 ≈ Ė₄=1.12 (генератори майже рівносильні).<br>
+          • Від'ємні: <strong>Ė₂₄ = −0.020</strong> та <strong>Ė₃₄ = −0.040</strong> — ЕРС генератора 4 (1.12) вища за ЕРС генераторів 2 (1.10) та 3 (1.08).<br>
+          • При розрахунку КЗ ці ЕРС зазвичай малі порівняно з опорами, що означає: при близьких значеннях надперехідних ЕРС генераторів основну роль відіграють опори, а не ЕРС сторін.
+        </div>
+
+        <div class="step">
+          <div class="step-label">Перевірка — контурні рівняння</div>
+          <p>Обираємо будь-які незалежні трикутні контури багатокутника і перевіряємо, що <strong>алгебраїчна сума ЕРС при обході контуру = 0</strong>. Правило знаків: ЕРС «+» якщо її напрямок збігається з напрямком обходу, «−» якщо протилежний. Для контуру i→j→k→i: Ė<sub>ij</sub> + Ė<sub>jk</sub> − Ė<sub>ik</sub> = 0 (бо Ė<sub>ik</sub> спрямована від i до k, а обхід іде від k до i).</p>
+          <div class="formula-box emf-formula">
+Контур 1-2-3: Ė₁₂ + Ė₂₃ − Ė₁₃ = 0.030 + 0.020 − 0.050 = <strong>0 ✓</strong><br>
+Контур 1-2-4: Ė₁₂ + Ė₂₄ − Ė₁₄ = 0.030 + (−0.020) − 0.010 = <strong>0 ✓</strong><br>
+Контур 2-3-5: Ė₂₃ + Ė₃₅ − Ė₂₅ = 0.020 + 0.030 − 0.050 = <strong>0 ✓</strong><br>
+Контур 3-4-5: Ė₃₄ + Ė₄₅ − Ė₃₅ = (−0.040) + 0.070 − 0.030 = <strong>0 ✓</strong>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-label">Перевірка — вузлові рівняння</div>
+          <p>Перевіряємо, що еквівалентний багатокутник правильно відтворює розподіл струмів вихідної зірки. Для вузла k рівняння: <strong>Σ (Ė<sub>kj</sub>/x<sub>j</sub>) = Y·Ė<sub>k</sub> − S</strong>, де S = Σ(Ė<sub>m</sub>/x<sub>m</sub>). У лівій частині підсумовуємо відношення ЕРС кожної сторони, що виходить з вузла k, до опору <em>протилежного</em> променя x<sub>j</sub>. Права частина обчислюється через вихідні дані зірки.</p>
+          <div class="formula-box">
+Σ(Ė<sub>m</sub>/x<sub>m</sub>) = 1.13/0.08 + 1.10/0.15 + 1.08/0.20 + 1.12/0.30 + 1.05/0.40<br>
+&nbsp; = 14.125 + 7.333 + 5.400 + 3.733 + 2.625 = <strong>33.217</strong><br><br>
+Вузол 1: Ė₁₂/x₂ + Ė₁₃/x₃ + Ė₁₄/x₄ + Ė₁₅/x₅<br>
+&nbsp; = 0.030/0.15 + 0.050/0.20 + 0.010/0.30 + 0.080/0.40<br>
+&nbsp; = 0.200 + 0.250 + 0.033 + 0.200 = 0.683<br>
+&nbsp; Y·Ė₁ − S = 30.0 × 1.13 − 33.217 = 33.900 − 33.217 = <strong>0.683 ✓</strong>
+          </div>
+        </div>
+
+        <!-- Зведена таблиця -->
+        <h3 style="color: var(--accent); margin: 2rem 0 1rem; font-size: 1.1rem;">Зведена таблиця еквівалентного багатокутника</h3>
+        <table class="data-table">
+          <thead>
+            <tr><th>Сторона</th><th>Опір x<sub>ij</sub> (в.о.)</th><th>ЕРС Ė<sub>ij</sub> (в.о.)</th><th>Тип</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1–2</td><td>0.360</td><td>+0.030</td><td>Сторона</td></tr>
+            <tr><td>2–3</td><td>0.900</td><td>+0.020</td><td>Сторона</td></tr>
+            <tr><td>3–4</td><td>1.800</td><td>−0.040</td><td>Сторона</td></tr>
+            <tr><td>4–5</td><td>3.600</td><td>+0.070</td><td>Сторона</td></tr>
+            <tr><td>5–1</td><td>0.960</td><td>−0.080</td><td>Сторона</td></tr>
+            <tr><td>1–3</td><td>0.480</td><td>+0.050</td><td>Діагональ</td></tr>
+            <tr><td>1–4</td><td>0.720</td><td>+0.010</td><td>Діагональ</td></tr>
+            <tr><td>2–4</td><td>1.350</td><td>−0.020</td><td>Діагональ</td></tr>
+            <tr><td>2–5</td><td>1.800</td><td>+0.050</td><td>Діагональ</td></tr>
+            <tr><td>3–5</td><td>2.400</td><td>+0.030</td><td>Діагональ</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Фінальна схема багатокутника -->
+        <h3 style="color: var(--accent3); margin: 2rem 0 1rem; font-size: 1.1rem;">Еквівалентний багатокутник (фінальний результат)</h3>
+        <div class="schema-container">
+          <div class="schema-box" style="padding: 1.5rem;">
+            <svg viewBox="0 0 600 530" width="580" xmlns="http://www.w3.org/2000/svg">
+              <!-- Сторони (5 ліній) -->
+              <line x1="300" y1="35" x2="514" y2="191" stroke="#10b981" stroke-width="2.5"/>
+              <line x1="514" y1="191" x2="432" y2="444" stroke="#10b981" stroke-width="2.5"/>
+              <line x1="432" y1="444" x2="168" y2="444" stroke="#10b981" stroke-width="2.5"/>
+              <line x1="168" y1="444" x2="86" y2="191" stroke="#10b981" stroke-width="2.5"/>
+              <line x1="86" y1="191" x2="300" y2="35" stroke="#10b981" stroke-width="2.5"/>
+              <!-- Діагоналі (5 ліній) -->
+              <line x1="300" y1="35" x2="432" y2="444" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8,4"/>
+              <line x1="300" y1="35" x2="168" y2="444" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8,4"/>
+              <line x1="514" y1="191" x2="168" y2="444" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8,4"/>
+              <line x1="514" y1="191" x2="86" y2="191" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8,4"/>
+              <line x1="432" y1="444" x2="86" y2="191" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8,4"/>
+              <!-- Вузли -->
+              <circle cx="300" cy="35" r="14" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="514" cy="191" r="14" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="432" cy="444" r="14" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="168" cy="444" r="14" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <circle cx="86" cy="191" r="14" fill="#0d1525" stroke="#f59e0b" stroke-width="2.5"/>
+              <!-- Номери вузлів -->
+              <text x="300" y="41" font-size="16" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">1</text>
+              <text x="514" y="197" font-size="16" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">2</text>
+              <text x="432" y="450" font-size="16" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">3</text>
+              <text x="168" y="450" font-size="16" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">4</text>
+              <text x="86" y="197" font-size="16" fill="#fbbf24" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">5</text>
+              <!-- Мітки СТОРІН: опори + ЕРС -->
+              <!-- 1-2 -->
+              <text x="422" y="88" font-size="12" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₁₂=0.360</text>
+              <text x="422" y="104" font-size="12" fill="#f472b6" font-family="JetBrains Mono">Ė₁₂=+0.030</text>
+              <!-- 2-3 -->
+              <text x="484" y="312" font-size="12" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₂₃=0.900</text>
+              <text x="484" y="328" font-size="12" fill="#f472b6" font-family="JetBrains Mono">Ė₂₃=+0.020</text>
+              <!-- 3-4 -->
+              <text x="248" y="486" font-size="12" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₃₄=1.800</text>
+              <text x="248" y="502" font-size="12" fill="#f472b6" font-family="JetBrains Mono">Ė₃₄=−0.040</text>
+              <!-- 4-5 -->
+              <text x="28" y="312" font-size="12" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₄₅=3.600</text>
+              <text x="28" y="328" font-size="12" fill="#f472b6" font-family="JetBrains Mono">Ė₄₅=+0.070</text>
+              <!-- 5-1 -->
+              <text x="130" y="88" font-size="12" fill="#10b981" font-family="JetBrains Mono" font-weight="bold">x₅₁=0.960</text>
+              <text x="130" y="104" font-size="12" fill="#f472b6" font-family="JetBrains Mono">Ė₅₁=−0.080</text>
+              <!-- ДІАГОНАЛІ -->
+              <!-- 1-3 -->
+              <text x="373" y="244" font-size="11.5" fill="#ef4444" font-family="JetBrains Mono" font-weight="bold">x₁₃=0.480</text>
+              <text x="373" y="260" font-size="11.5" fill="#f472b6" font-family="JetBrains Mono">Ė₁₃=+0.050</text>
+              <!-- 1-4 -->
+              <text x="160" y="232" font-size="11.5" fill="#ef4444" font-family="JetBrains Mono" font-weight="bold">x₁₄=0.720</text>
+              <text x="160" y="248" font-size="11.5" fill="#f472b6" font-family="JetBrains Mono">Ė₁₄=+0.010</text>
+              <!-- 2-4 -->
+              <text x="308" y="352" font-size="11.5" fill="#ef4444" font-family="JetBrains Mono" font-weight="bold">x₂₄=1.350</text>
+              <text x="308" y="368" font-size="11.5" fill="#f472b6" font-family="JetBrains Mono">Ė₂₄=−0.020</text>
+              <!-- 2-5 -->
+              <text x="252" y="172" font-size="11.5" fill="#ef4444" font-family="JetBrains Mono" font-weight="bold">x₂₅=1.800</text>
+              <text x="252" y="188" font-size="11.5" fill="#f472b6" font-family="JetBrains Mono">Ė₂₅=+0.050</text>
+              <!-- 3-5 -->
+              <text x="200" y="352" font-size="11.5" fill="#ef4444" font-family="JetBrains Mono" font-weight="bold">x₃₅=2.400</text>
+              <text x="200" y="368" font-size="11.5" fill="#f472b6" font-family="JetBrains Mono">Ė₃₅=+0.030</text>
+            </svg>
+            <div class="schema-label">Еквівалентний п'ятикутник з діагоналями — 10 опорів (<span style="color:#10b981">зелений</span>) + 10 ЕРС (<span style="color:#f472b6">рожевий</span>)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({top: 200, behavior: 'smooth'});
+}
+</script>
+</body>
+</html>
