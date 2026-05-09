@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Практична 4 — Метод розрахункових кривих</title>
+  <style>
+    :root {
+      --panel: #ffffff;
+      --panel-soft: #f8fafc;
+      --text: #172033;
+      --muted: #64748b;
+      --line: #d7dee8;
+      --axis: #101827;
+      --accent: #2563eb;
+      --accent-dark: #1e40af;
+      --danger: #dc2626;
+      --warning: #b45309;
+      --ok: #047857;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #eef4ff 0%, #f8fafc 45%, #f4f1ff 100%);
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    header {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 28px 20px 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(26px, 3vw, 42px);
+      letter-spacing: -0.035em;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 20px;
+    }
+
+    h3 {
+      margin: 18px 0 8px;
+      font-size: 16px;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    .subtitle {
+      max-width: 1040px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    main {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 0 20px 34px;
+      display: grid;
+      grid-template-columns: minmax(355px, 430px) minmax(650px, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(148, 163, 184, 0.30);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      backdrop-filter: blur(8px);
+    }
+
+    .left-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 6px;
+    }
+
+    .tab,
+    .zoom-button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 760;
+      transition: 0.18s ease;
+    }
+
+    .tab.active {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+      color: #334155;
+      font-weight: 760;
+    }
+
+    .field-label {
+      display: inline-block;
+      min-width: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      line-height: 1.25;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 10px 11px;
+      font: inherit;
+      background: white;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    input[type="range"] {
+      padding: 0;
+      accent-color: var(--accent);
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .warning {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 14px;
+      font-size: 14px;
+      border: 1px solid #fed7aa;
+      background: #fff7ed;
+      color: #7c2d12;
+    }
+
+    .error-list {
+      display: none;
+      margin-top: 12px;
+      border-radius: 14px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+
+    .error-list.visible {
+      display: block;
+    }
+
+    .error-list ul {
+      margin: 6px 0 0 18px;
+      padding: 0;
+    }
+
+    .graph-card {
+      display: grid;
+      gap: 14px;
+    }
+
+    .graph-controls {
+      display: grid;
+      grid-template-columns: minmax(150px, 220px) minmax(260px, 1fr);
+      gap: 12px;
+      align-items: end;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .slider-control-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline;
+      margin-bottom: 6px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .slider-value {
+      min-width: 72px;
+      text-align: right;
+      font-weight: 850;
+      color: #1e3a8a;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 9px 10px;
+    }
+
+    .canvas-wrap {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      min-height: 660px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 660px;
+      display: block;
+    }
+
+    .graph-zoom-overlay {
+      position: absolute;
+      z-index: 5;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 11px;
+      background: rgba(37, 99, 235, 0.96);
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
+      cursor: pointer;
+      font-weight: 850;
+      font-size: 12px;
+      line-height: 1.15;
+      max-width: min(210px, calc(100% - 24px));
+      white-space: nowrap;
+      transform: translateZ(0);
+    }
+
+    .graph-zoom-overlay:hover {
+      background: rgba(30, 64, 175, 0.98);
+    }
+
+    .graph-zoom-overlay.active {
+      background: rgba(15, 23, 42, 0.94);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 5px 9px;
+      white-space: nowrap;
+    }
+
+    .line-sample {
+      width: 22px;
+      height: 3px;
+      border-radius: 999px;
+      background: #111827;
+    }
+
+    .line-sample.active {
+      background: var(--accent);
+      height: 4px;
+    }
+
+    .line-sample.dashed {
+      background: repeating-linear-gradient(90deg, #dc2626 0, #dc2626 7px, transparent 7px, transparent 12px);
+      height: 4px;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      border-radius: 16px;
+      padding: 12px;
+      min-height: 92px;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric .value {
+      margin-top: 8px;
+      font-size: 24px;
+      font-weight: 850;
+      letter-spacing: -0.03em;
+    }
+
+    .metric .unit {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .steps {
+      display: grid;
+      gap: 10px;
+    }
+
+    .step {
+      border-left: 4px solid var(--accent);
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    code {
+      background: #eef2ff;
+      color: #3730a3;
+      border-radius: 6px;
+      padding: 1px 5px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.95em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 14px;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #e2e8f0;
+      padding: 8px 9px;
+      text-align: left;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      padding: 12px 14px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 820;
+    }
+
+    .small-note {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .footer-note {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 0 20px 30px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1120px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .canvas-wrap {
+        min-height: 620px;
+      }
+
+      canvas {
+        height: 620px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      header {
+        padding: 20px 12px 12px;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+
+      h2 {
+        font-size: 18px;
+      }
+
+      main {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+
+      .left-stack,
+      .graph-card {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .left-stack {
+        margin-bottom: 14px;
+      }
+
+      .panel {
+        width: 100%;
+        max-width: 100%;
+        padding: 12px;
+        border-radius: 14px;
+        overflow: hidden;
+      }
+
+      .form-grid,
+      .result-grid,
+      .tabs,
+      .graph-controls {
+        grid-template-columns: 1fr;
+      }
+
+      label {
+        display: block;
+        width: 100%;
+      }
+
+      .field-label {
+        display: block;
+        width: 100%;
+        margin-bottom: 6px;
+        white-space: normal;
+        overflow-wrap: normal;
+        word-break: normal;
+      }
+
+      input,
+      select {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .slider-control-label {
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .canvas-wrap {
+        min-height: 540px;
+      }
+
+      canvas {
+        height: 540px;
+      }
+
+      .graph-zoom-overlay {
+        display: none;
+      }
+
+      .footer-note {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      h1 {
+        font-size: 23px;
+      }
+
+      h2 {
+        font-size: 17px;
+      }
+
+      .subtitle,
+      .hint,
+      .small-note {
+        font-size: 13px;
+      }
+
+      .metric {
+        min-height: 76px;
+      }
+
+      .metric .value {
+        font-size: 22px;
+      }
+
+      .canvas-wrap {
+        min-height: 500px;
+      }
+
+      canvas {
+        height: 500px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Практична 4. Метод розрахункових кривих</h1>
+    <p class="subtitle">
+      Інтерактивний тренажер для визначення періодичної складової струму КЗ
+      <strong>I<sub>пt*</sub></strong> за МРК. Основний графік відповідає діапазону
+      <strong>X<sub>*розр</sub> ≤ 1</strong>, а фрагмент справа вгорі — діапазону
+      <strong>X<sub>*розр</sub> &gt; 1</strong>.
+    </p>
+  </header>
+
+  <main>
+    <section class="left-stack">
+      <div class="panel">
+        <h2>1. Вибір типу джерела</h2>
+        <div class="tabs" role="tablist" aria-label="Тип генератора">
+          <button class="tab active" type="button" data-generator="hydro">Гідрогенератор з АРЗ</button>
+          <button class="tab" type="button" data-generator="turbo">Турбогенератор без АРЗ</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>2. Розрахункові дані</h2>
+        <div class="form-grid">
+          <label>
+            <span class="field-label">X<sub>рез*б</sub></span>
+            <input id="xBase" type="number" min="0.000001" step="0.001" value="0.335" />
+          </label>
+
+          <label>
+            <span class="field-label">S<sub>номΣ</sub>, МВА</span>
+            <input id="sNom" type="number" min="0.000001" step="0.1" value="92" />
+          </label>
+
+          <label>
+            <span class="field-label">S<sub>б</sub>, МВА</span>
+            <input id="sBase" type="number" min="0.000001" step="0.1" value="100" />
+          </label>
+
+          <label>
+            <span class="field-label">U<sub>б</sub>, кВ</span>
+            <input id="uBase" type="number" min="0.000001" step="0.1" value="115" />
+          </label>
+        </div>
+
+        <div class="error-list" id="errorBox" aria-live="polite"></div>
+
+        <div class="warning" id="hydroCorrectionBox">
+          Для гідрогенератора з АРЗ використовується поправка:
+          <code>X'_*розр = X_*розр + 0.07</code>.
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>3. Отримані величини</h2>
+        <div class="result-grid">
+          <div class="metric">
+            <div class="label">Розрахунковий опір</div>
+            <div class="value" id="xCalcOut">—</div>
+            <div class="unit">X<sub>*розр</sub></div>
+          </div>
+          <div class="metric">
+            <div class="label">З кривої</div>
+            <div class="value" id="iPuOut">—</div>
+            <div class="unit">I<sub>пt*</sub>, відн. ном. од.</div>
+          </div>
+          <div class="metric">
+            <div class="label">Іменований струм</div>
+            <div class="value" id="iKaOut">—</div>
+            <div class="unit">I<sub>пt</sub>, кА</div>
+          </div>
+        </div>
+        <p class="small-note" id="calculationStatus" style="margin-top: 10px;"></p>
+      </div>
+    </section>
+
+    <section class="panel graph-card">
+      <div>
+        <h2 id="graphTitle">Рисунок 6.9 — Розрахункові криві для гідрогенератора з пристроєм АРЗ</h2>
+        <p class="hint">Змініть момент часу τ і X<sub>*розр</sub> безпосередньо біля графіка.</p>
+      </div>
+
+      <div class="graph-controls" aria-label="Керування графіком">
+        <label>
+          <span class="field-label">Момент часу τ, с</span>
+          <select id="timeSelect">
+            <option value="0">0</option>
+            <option value="0.1" selected>0.1</option>
+            <option value="0.2">0.2</option>
+            <option value="1">1.0</option>
+            <option value="inf">∞</option>
+          </select>
+        </label>
+
+        <div>
+          <div class="slider-control-label">
+            <span>Повзунок X<sub>*розр</sub> для навчального режиму</span>
+            <span class="slider-value" id="sliderValue">0,378</span>
+          </div>
+          <input id="xSlider" type="range" min="0.1" max="3" step="0.001" value="0.378" />
+        </div>
+      </div>
+
+      <div class="canvas-wrap" id="canvasWrap">
+        <button class="graph-zoom-overlay" type="button" id="zoomInsetButton" aria-label="Збільшити фрагмент X більше 1">⛶ X&gt;1</button>
+        <canvas id="curveCanvas" width="980" height="660" aria-label="Інтерактивний графік МРК"></canvas>
+      </div>
+
+      <div class="legend" id="legend"></div>
+
+      <section class="panel" style="box-shadow: none;">
+        <h2>Покроковий алгоритм</h2>
+        <div class="steps" id="stepsBox"></div>
+      </section>
+
+      <details>
+        <summary>Контрольна таблиця значень активної кривої</summary>
+        <div id="pointsTableWrap" style="margin-top: 12px;"></div>
+      </details>
+    </section>
+  </main>
+
+  <div class="footer-note">
+    На мобільних пристроях графік автоматично перемикається між діапазонами 0.1…1.0 та 1…3 залежно від положення повзунка.
+  </div>
+
+  <script>
+    "use strict";
+
+    const APP = {
+      generator: "hydro",
+      zoomInset: false
+    };
+
+    const TIME_LABELS = {
+      "0": "τ = 0 c",
+      "0.1": "τ = 0.1 c",
+      "0.2": "τ = 0.2 c",
+      "1": "τ = 1.0 c",
+      "inf": "τ = ∞"
+    };
+
+    const TIME_ORDER = ["0", "0.1", "0.2", "1", "inf"];
+
+    const CURVE_COEFFICIENTS = {
+  turbo: {
+    "0": { // τ = 0 c
+      low: [15.6304, -83.6417, 176.753, -75.5041, -168.019, 51.8779, 107.607, 203.528, -176.36, -155.805, 22.3331, 131.035, -59.2488, -63.4772, -41.0977, 191.816, 102.77, -257.654, 78.4564],
+      high: [1.87244, -1.07256, 0.16765, 0.0348406, -0.0382604, -0.0126552, 0.0291666, -0.00229792, -0.00561856, 0.000961959, 0.000243879, -3.34757e-05, 1.9715e-05, -1.49286e-06, -5.26713e-06, 4.87741e-07, 3.13035e-07, -6.71307e-09, -1.00408e-08]
+    },
+    "0.1": { // τ = 0.1 c
+      low: [10.0235, -44.77, 77.0376, 1.73987, -114.602, 4.27566, 95.3142, 80.2247, -89.7801, -74.5628, 32.25, 57.4968, -46.7058, -9.15786, -37.8481, 51.8029, 100.995, -107.592, 14.7574],
+      high: [1.74861, -0.913438, -0.0420076, 0.127817, -0.0332725, 0.0145763, 0.00116964, 0.000237622, -0.00269843, 0.000121603, 0.000365294, -3.9151e-05, 6.33218e-06, -5.33289e-06, 9.8043e-07, -2.17114e-08, -1.06939e-07, -3.23564e-08, 1.61109e-08]
+    },
+    "0.2": { // τ = 0.2 c
+      low: [7.75766, -31.2128, 53.4054, -11.0792, -59.1349, 13.7219, 40.1861, 57.2292, -65.2921, -46.4107, 13.9027, 44.4137, -16.2283, -1.53375, -26.839, 40.0865, 36.1034, -73.3387, 25.1428],
+      high: [1.01236, 0.898963, -1.6021, 0.447565, 0.0886708, 0.131843, -0.140419, 0.0141455, 0.0157888, -0.00436171, 0.000444763, -8.8717e-05, -7.31605e-05, -1.30058e-05, 3.18858e-05, -1.95807e-06, -1.98984e-06, -1.57204e-07, 1.13651e-07]
+    },
+    "1": { // τ = 1.0 c
+      low: [3.09686, -3.4206, -5.44161, 12.7541, -0.923562, -1.49066, -2.85531, -10.2421, -7.96738, 11.9966, 9.71304, 1.03144, 0.998875, 23.865, -17.8988, -28.4121, -4.88737, 19.4071, 1.4968],
+      high: [0.433072, 2.57081, -3.30654, 0.880457, 0.207745, 0.27761, -0.307003, 0.0298746, 0.0360984, -0.00950985, 0.000741956, -0.000148601, -0.00016164, -2.70702e-05, 6.88391e-05, -4.41201e-06, -4.27996e-06, -3.16884e-07, 2.41241e-07]
+    },
+    "inf": { // τ = ∞
+      low: [1.74157, -1.30142, -2.08721, 7.90301, -7.96743, -4.9106, 11.7131, -0.251105, -1.07609, -4.42729, 2.85578, -2.64144, -5.07602, 3.66311, 1.01653, -4.64593, 12.8424, 0.244898, -6.87599],
+      high: [0.259707, 2.49176, -2.99241, 0.742481, 0.204795, 0.249839, -0.276542, 0.0262402, 0.0331145, -0.00859549, 0.000607185, -0.000136547, -0.000148725, -2.23427e-05, 6.21297e-05, -3.91079e-06, -3.86359e-06, -2.7757e-07, 2.12665e-07]
+    },
+  },
+  hydro: {
+    "0": { // τ = 0 c
+      low: [17.0333, -62.2993, 66.5794, 44.5286, -111.507, 70.9524, -38.6811, -127.767, 58.5467, 421.159, -380.314, -24.1428, 120.407, 130.781, -341.928, -168.87, 322.616, 239.272, -235.266],
+      high: [1.50181, 0.343292, -1.28413, 0.382981, 0.0635421, 0.11073, -0.108494, 0.0107762, 0.0110827, -0.00334999, 0.000531732, -9.67217e-05, -5.56665e-05, -1.25266e-05, 2.57195e-05, -1.52721e-06, -1.59372e-06, -1.4314e-07, 9.55253e-08]
+    },
+    "0.1": { // τ = 0.1 c
+      low: [9.88451, -30.3809, 32.7513, 4.00994, -30.8512, 37.6014, -25.7383, -44.6416, 17.9524, 115.289, -79.4694, -29.1345, 41.24, 21.4472, -67.5967, -64.3301, 117.651, 13.1394, -37.784],
+      high: [1.4377, 0.466943, -1.43379, 0.442496, 0.0660802, 0.120008, -0.120118, 0.011957, 0.0125054, -0.00370147, 0.000528955, -9.05118e-05, -6.23348e-05, -1.3173e-05, 2.789e-05, -1.65198e-06, -1.75677e-06, -1.42608e-07, 1.01825e-07]
+    },
+    "0.2": { // τ = 0.2 c
+      low: [8.18779, -24.0092, 33.4675, -28.224, 10.8577, 27.0593, -38.7146, -0.151606, 13.706, -9.56002, 33.3936, -38.5415, 14.4538, -30.7564, 51.193, -17.5662, 54.8408, -113.256, 54.641],
+      high: [0.762873, 2.52852, -3.51026, 0.951723, 0.217534, 0.295077, -0.323734, 0.0311475, 0.037997, -0.0100098, 0.000791484, -0.000157758, -0.000172213, -2.79902e-05, 7.24825e-05, -4.58507e-06, -4.5288e-06, -3.28246e-07, 2.52893e-07]
+    },
+    "1": { // τ = 1.0 c
+      low: [9.111, -31.459, 37.5241, 17.26, -57.6308, 34.937, -19.9433, -60.7688, 33.1649, 229.061, -213.827, -17.0275, 64.2544, 75.3248, -188.985, -88.2727, 179.664, 128.662, -130.01],
+      high: [1.4377, 0.466943, -1.43379, 0.442496, 0.0660802, 0.120008, -0.120118, 0.011957, 0.0125054, -0.00370147, 0.000528955, -9.05118e-05, -6.23348e-05, -1.3173e-05, 2.789e-05, -1.65198e-06, -1.75677e-06, -1.42608e-07, 1.01825e-07]
+    },
+    "inf": { // τ = ∞
+      low: [5.62078, -11.7612, 16.7898, -20.4335, 14.4872, 12.6578, -26.8578, 8.77855, 7.06313, -37.7978, 58.2614, -23.5145, 0.944188, -38.9763, 63.6297, -1.60377, 11.3908, -97.3496, 59.9717],
+      high: [0.808139, 4.73958, -6.52096, 1.80882, 0.410147, 0.541661, -0.603842, 0.0586694, 0.0709504, -0.0186581, 0.00138317, -0.00027557, -0.00031792, -5.14308e-05, 0.000134337, -8.43593e-06, -8.3777e-06, -6.13344e-07, 4.65729e-07]
+    },
+  },
+};
+
+    const CURVE_MODELS = {
+      hydro: {
+        title: "Рисунок 6.9 — Розрахункові криві для гідрогенератора з пристроєм АРЗ",
+        shortName: "Гідрогенератор з АРЗ",
+        correction: 0.07,
+        xMin: 0.1,
+        xSplit: 1,
+        xMax: 3,
+        mainYMin: 0.7,
+        mainYMax: 7,
+        insetYMin: 0.3,
+        insetYMax: 1.25,
+        note: "Для гідрогенератора з АРЗ до X*розр додається 0.07."
+      },
+      turbo: {
+        title: "Рисунок 6.10 — Розрахункові криві для турбогенератора без пристрою АРЗ",
+        shortName: "Турбогенератор без АРЗ",
+        correction: 0,
+        xMin: 0.1,
+        xSplit: 1,
+        xMax: 3,
+        mainYMin: 0.7,
+        mainYMax: 7,
+        insetYMin: 0.3,
+        insetYMax: 0.95,
+        note: "Для турбогенератора без АРЗ поправка +0.07 не застосовується."
+      }
+    };
+
+    const el = {
+      tabs: [...document.querySelectorAll(".tab")],
+      timeSelect: document.getElementById("timeSelect"),
+      xBase: document.getElementById("xBase"),
+      sNom: document.getElementById("sNom"),
+      sBase: document.getElementById("sBase"),
+      uBase: document.getElementById("uBase"),
+      xSlider: document.getElementById("xSlider"),
+      sliderValue: document.getElementById("sliderValue"),
+      zoomInsetButton: document.getElementById("zoomInsetButton"),
+      canvasWrap: document.getElementById("canvasWrap"),
+      errorBox: document.getElementById("errorBox"),
+      xCalcOut: document.getElementById("xCalcOut"),
+      iPuOut: document.getElementById("iPuOut"),
+      iKaOut: document.getElementById("iKaOut"),
+      stepsBox: document.getElementById("stepsBox"),
+      canvas: document.getElementById("curveCanvas"),
+      graphTitle: document.getElementById("graphTitle"),
+      legend: document.getElementById("legend"),
+      pointsTableWrap: document.getElementById("pointsTableWrap"),
+      hydroCorrectionBox: document.getElementById("hydroCorrectionBox"),
+      calculationStatus: document.getElementById("calculationStatus")
+    };
+
+    const ctx = el.canvas.getContext("2d");
+
+    function getActiveModel() {
+      return CURVE_MODELS[APP.generator];
+    }
+
+    function parsePositiveNumber(input, label, errors) {
+      const normalizedValue = String(input.value).trim().replace(",", ".");
+      const value = Number(normalizedValue);
+
+      if (!Number.isFinite(value) || value <= 0) {
+        errors.push(`${label} має бути додатним числом.`);
+        return NaN;
+      }
+
+      return value;
+    }
+
+    function getInputs() {
+      const errors = [];
+      const xBase = parsePositiveNumber(el.xBase, "Xрез*б", errors);
+      const sNom = parsePositiveNumber(el.sNom, "SномΣ", errors);
+      const sBase = parsePositiveNumber(el.sBase, "Sб", errors);
+      const uBase = parsePositiveNumber(el.uBase, "Uб", errors);
+      const sliderX = parsePositiveNumber(el.xSlider, "X*розр з повзунка", errors);
+      const time = el.timeSelect.value;
+
+      if (!TIME_ORDER.includes(time)) {
+        errors.push("Вибраний момент часу не підтримується.");
+      }
+
+      return { xBase, sNom, sBase, uBase, sliderX, time, errors };
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function formatNumber(value, digits = 4) {
+      if (!Number.isFinite(value)) return "—";
+      return value.toLocaleString("uk-UA", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function evaluatePolynomialHorner(coefficients, x) {
+      if (!Array.isArray(coefficients) || coefficients.length !== 19) {
+        throw new Error("Очікується масив із 19 коефіцієнтів полінома.");
+      }
+
+      let result = 0;
+      for (let index = coefficients.length - 1; index >= 0; index -= 1) {
+        result = result * x + coefficients[index];
+      }
+
+      return result;
+    }
+
+    function getCoefficientSet(generator, time, x) {
+      const generatorSet = CURVE_COEFFICIENTS[generator];
+      if (!generatorSet) {
+        throw new Error(`Невідомий тип генератора: ${generator}.`);
+      }
+
+      const timeSet = generatorSet[time];
+      if (!timeSet) {
+        throw new Error(`Немає коефіцієнтів для часу ${time}.`);
+      }
+
+      return x <= 1 ? timeSet.low : timeSet.high;
+    }
+
+    function evaluateCurve(generator, time, x) {
+      const coefficients = getCoefficientSet(generator, time, x);
+      const value = evaluatePolynomialHorner(coefficients, x);
+
+      if (!Number.isFinite(value)) {
+        throw new Error("Апроксимація повернула нечислове значення.");
+      }
+
+      return value;
+    }
+
+    function calculate() {
+      const model = getActiveModel();
+      const inputs = getInputs();
+
+      if (inputs.errors.length > 0) {
+        showErrors(inputs.errors);
+        return null;
+      }
+
+      hideErrors();
+
+      const rawX = inputs.xBase * inputs.sNom / inputs.sBase;
+      const correctedX = rawX + model.correction;
+      const selectedX = inputs.sliderX;
+
+      let iPu;
+      let method;
+      let warning = "";
+
+      try {
+        if (selectedX > 3) {
+          iPu = 1 / selectedX;
+          method = "rule";
+        } else {
+          const safeX = clamp(selectedX, model.xMin, model.xMax);
+          iPu = evaluateCurve(APP.generator, inputs.time, safeX);
+          method = safeX <= 1 ? "low" : "high";
+
+          if (safeX !== selectedX) {
+            warning = `X*розр = ${formatNumber(selectedX, 4)} виходить за межі цифрової моделі, тому використано ${formatNumber(safeX, 4)}.`;
+          }
+        }
+
+        if (!Number.isFinite(iPu) || iPu <= 0) {
+          throw new Error("Обчислене Iпt* не є додатним числом. Перевірте X*розр і вибрану криву.");
+        }
+
+        const iKa = iPu * inputs.sNom / (Math.sqrt(3) * inputs.uBase);
+
+        return {
+          model,
+          ...inputs,
+          rawX,
+          correctedX,
+          selectedX,
+          iPu,
+          iKa,
+          method,
+          warning
+        };
+      } catch (error) {
+        showErrors([error.message]);
+        return null;
+      }
+    }
+
+    function showErrors(errors) {
+      el.errorBox.classList.add("visible");
+      el.errorBox.innerHTML = `<strong>Перевірте вхідні дані:</strong><ul>${errors.map(error => `<li>${escapeHtml(error)}</li>`).join("")}</ul>`;
+      el.xCalcOut.textContent = "—";
+      el.iPuOut.textContent = "—";
+      el.iKaOut.textContent = "—";
+      el.calculationStatus.textContent = "";
+    }
+
+    function hideErrors() {
+      el.errorBox.classList.remove("visible");
+      el.errorBox.innerHTML = "";
+    }
+
+    function updateOutputs(result) {
+      if (!result) {
+        draw();
+        return;
+      }
+
+      el.xCalcOut.textContent = formatNumber(result.selectedX, 4);
+      el.iPuOut.textContent = formatNumber(result.iPu, 4);
+      el.iKaOut.textContent = formatNumber(result.iKa, 4);
+
+      const methodText = {
+        "low": "основний графік для X*розр ≤ 1",
+        "high": "фрагмент графіка для X*розр > 1",
+        "rule": "правило Iпt* = 1 / X*розр, бо X*розр > 3"
+      }[result.method] || "розрахункова крива";
+
+      el.calculationStatus.textContent = result.warning || `Використано: ${methodText}.`;
+
+      el.stepsBox.innerHTML = `
+        <div class="step">
+          <strong>Крок 1. Розрахунковий опір вітки</strong>
+          X<sub>*розр</sub> = X<sub>рез*б</sub> · S<sub>номΣ</sub> / S<sub>б</sub>
+          = ${formatNumber(result.xBase, 5)} · ${formatNumber(result.sNom, 4)} / ${formatNumber(result.sBase, 4)}
+          = <strong>${formatNumber(result.rawX, 5)}</strong>.
+        </div>
+        <div class="step">
+          <strong>Крок 2. Поправка за типом генератора</strong>
+          ${escapeHtml(result.model.note)}
+          Після поправки: <strong>X<sub>*розр</sub> = ${formatNumber(result.correctedX, 5)}</strong>.
+          На графіку повзунком вибрано <strong>X<sub>*розр</sub> = ${formatNumber(result.selectedX, 5)}</strong>.
+        </div>
+        <div class="step">
+          <strong>Крок 3. Вибір області графіка</strong>
+          Обрана крива: <strong>${TIME_LABELS[result.time]}</strong>.
+          Використано: <strong>${methodText}</strong>.
+          Отримано <strong>I<sub>пt*</sub> = ${formatNumber(result.iPu, 5)}</strong>.
+        </div>
+        <div class="step">
+          <strong>Крок 4. Перехід до іменованих одиниць</strong>
+          I<sub>пt</sub> = I<sub>пt*</sub> · S<sub>номΣ</sub> / (√3 · U<sub>б</sub>)
+          = ${formatNumber(result.iPu, 5)} · ${formatNumber(result.sNom, 4)} / (√3 · ${formatNumber(result.uBase, 4)})
+          = <strong>${formatNumber(result.iKa, 5)} кА</strong>.
+        </div>
+      `;
+
+      updatePointsTable(result);
+    }
+
+    function updatePointsTable(result) {
+      const sampleXs = [0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 1, 1.2, 1.5, 2, 2.5, 3];
+      const rows = sampleXs.map(x => {
+        const value = x > 3 ? 1 / x : evaluateCurve(APP.generator, result.time, x);
+        const range = x <= 1 ? "основний графік" : "фрагмент X>1";
+        return `
+          <tr>
+            <td>${formatNumber(x, 3)}</td>
+            <td>${range}</td>
+            <td>${formatNumber(value, 5)}</td>
+          </tr>
+        `;
+      }).join("");
+
+      el.pointsTableWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>X<sub>*розр</sub></th>
+              <th>Область</th>
+              <th>I<sub>пt*</sub> для ${TIME_LABELS[result.time]}</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function draw() {
+      const result = calculate();
+      const model = getActiveModel();
+      const dpr = window.devicePixelRatio || 1;
+      const rect = el.canvas.getBoundingClientRect();
+
+      el.canvas.width = Math.round(rect.width * dpr);
+      el.canvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const width = rect.width;
+      const height = rect.height;
+      const mobile = width < 700;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      if (mobile) {
+        drawMobileAutoView(model, result, width, height);
+      } else if (APP.zoomInset) {
+        drawZoomInsetView(model, result, width, height);
+      } else {
+        drawMethodicalInsetView(model, result, width, height);
+      }
+
+      positionZoomButton(width, height);
+      updateLegend(el.timeSelect.value);
+    }
+
+    function buildMainPlot(width, height, model) {
+      return {
+        x: 72,
+        y: 70,
+        w: Math.max(290, width - 118),
+        h: height - 150,
+        xMin: 0.1,
+        xMax: 1,
+        yMin: model.mainYMin,
+        yMax: model.mainYMax,
+        xStep: 0.1,
+        yStep: 0.5,
+        title: "Основний графік: X*розр = 0.1…1.0"
+      };
+    }
+
+    function buildInsetPlot(width, height, model) {
+      const mobile = width < 650;
+      const insetWidth = mobile ? Math.max(230, width * 0.60) : Math.max(315, width * 0.44);
+      const insetHeight = mobile ? Math.max(205, height * 0.39) : Math.max(235, height * 0.41);
+      const insetHeader = mobile ? 46 : 48;
+      const outerRight = mobile ? 16 : 22;
+      const outerTop = mobile ? 50 : 48;
+
+      return {
+        x: width - insetWidth - outerRight,
+        y: outerTop + insetHeader,
+        w: insetWidth,
+        h: insetHeight,
+        headerHeight: insetHeader,
+        outerX: width - insetWidth - outerRight - 10,
+        outerY: outerTop,
+        outerW: insetWidth + 22,
+        outerH: insetHeight + insetHeader + 42,
+        xMin: 1,
+        xMax: 3,
+        yMin: model.insetYMin,
+        yMax: model.insetYMax,
+        xStep: 0.5,
+        yStep: model.insetYMax <= 1 ? 0.1 : 0.2,
+        title: "Фрагмент X*розр = 1…3"
+      };
+    }
+
+    function drawMethodicalInsetView(model, result, width, height) {
+      const mainPlot = buildMainPlot(width, height, model);
+      const insetPlot = buildInsetPlot(width, height, model);
+
+      drawPlotFrame(mainPlot, "Iпt*", false);
+      TIME_ORDER.forEach(time => drawCurveOnPlot(mainPlot, APP.generator, time, time === el.timeSelect.value));
+      drawCurveLabelsOnPlot(mainPlot, APP.generator);
+
+      drawInsetBackground(insetPlot);
+      drawPlotFrame(insetPlot, "Iпt*", true);
+      TIME_ORDER.forEach(time => drawCurveOnPlot(insetPlot, APP.generator, time, time === el.timeSelect.value));
+      drawCurveLabelsOnPlot(insetPlot, APP.generator);
+
+      if (result) {
+        const activePlot = result.selectedX <= 1 ? mainPlot : insetPlot;
+        const markerX = clamp(result.selectedX, activePlot.xMin, activePlot.xMax);
+        const markerY = clamp(result.iPu, activePlot.yMin, activePlot.yMax);
+        drawMarker(activePlot, markerX, markerY, result);
+      }
+
+      drawCanvasHeader(model, mainPlot);
+    }
+
+    function drawZoomInsetView(model, result, width, height) {
+      const plot = {
+        x: 72,
+        y: 70,
+        w: width - 118,
+        h: height - 150,
+        xMin: 1,
+        xMax: 3,
+        yMin: model.insetYMin,
+        yMax: model.insetYMax,
+        xStep: 0.25,
+        yStep: model.insetYMax <= 1 ? 0.1 : 0.2,
+        title: "Збільшений фрагмент: X*розр = 1…3"
+      };
+
+      drawPlotFrame(plot, "Iпt*", false);
+      TIME_ORDER.forEach(time => drawCurveOnPlot(plot, APP.generator, time, time === el.timeSelect.value));
+      drawCurveLabelsOnPlot(plot, APP.generator);
+
+      if (result) {
+        const markerX = clamp(result.selectedX, plot.xMin, plot.xMax);
+        const markerY = clamp(result.iPu, plot.yMin, plot.yMax);
+        drawMarker(plot, markerX, markerY, result);
+      }
+
+      drawCanvasHeader(model, plot);
+    }
+
+    function drawMobileAutoView(model, result, width, height) {
+      const useHighRange = result ? result.selectedX > 1 : Number(el.xSlider.value) > 1;
+      const plot = {
+        x: 62,
+        y: 68,
+        w: Math.max(220, width - 92),
+        h: height - 132,
+        xMin: useHighRange ? 1 : 0.1,
+        xMax: useHighRange ? 3 : 1,
+        yMin: useHighRange ? model.insetYMin : model.mainYMin,
+        yMax: useHighRange ? model.insetYMax : model.mainYMax,
+        xStep: useHighRange ? 0.5 : 0.1,
+        yStep: useHighRange ? (model.insetYMax <= 1 ? 0.1 : 0.2) : 0.5,
+        title: useHighRange
+          ? "Активний графік: X*розр = 1…3"
+          : "Активний графік: X*розр = 0.1…1.0"
+      };
+
+      drawPlotFrame(plot, "Iпt*", false);
+      TIME_ORDER.forEach(time => drawCurveOnPlot(plot, APP.generator, time, time === el.timeSelect.value));
+      drawCurveLabelsOnPlot(plot, APP.generator);
+
+      if (result) {
+        const markerX = clamp(result.selectedX, plot.xMin, plot.xMax);
+        const markerY = clamp(result.iPu, plot.yMin, plot.yMax);
+        drawMarker(plot, markerX, markerY, result);
+      }
+
+      drawCanvasHeader(model, plot);
+    }
+
+    function plotX(plot, x) {
+      return plot.x + ((x - plot.xMin) / (plot.xMax - plot.xMin)) * plot.w;
+    }
+
+    function plotY(plot, y) {
+      return plot.y + plot.h - ((y - plot.yMin) / (plot.yMax - plot.yMin)) * plot.h;
+    }
+
+    function drawInsetBackground(plot) {
+      ctx.save();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.97)";
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, plot.outerX, plot.outerY, plot.outerW, plot.outerH, 14);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.35)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(plot.outerX + 10, plot.y - 12);
+      ctx.lineTo(plot.outerX + plot.outerW - 10, plot.y - 12);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawPlotFrame(plot, yLabel, compact) {
+      ctx.save();
+
+      ctx.strokeStyle = "#dbe3ee";
+      ctx.lineWidth = 1;
+
+      for (let x = plot.xMin; x <= plot.xMax + 1e-9; x += plot.xStep) {
+        const rounded = Number(x.toFixed(3));
+        const px = plotX(plot, rounded);
+        ctx.beginPath();
+        ctx.moveTo(px, plot.y);
+        ctx.lineTo(px, plot.y + plot.h);
+        ctx.stroke();
+      }
+
+      for (let y = plot.yMin; y <= plot.yMax + 1e-9; y += plot.yStep) {
+        const rounded = Number(y.toFixed(3));
+        const py = plotY(plot, rounded);
+        ctx.beginPath();
+        ctx.moveTo(plot.x, py);
+        ctx.lineTo(plot.x + plot.w, py);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = compact ? 1.8 : 2;
+      ctx.beginPath();
+      ctx.moveTo(plot.x, plot.y);
+      ctx.lineTo(plot.x, plot.y + plot.h);
+      ctx.lineTo(plot.x + plot.w, plot.y + plot.h);
+      ctx.stroke();
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = compact ? "850 13px system-ui, sans-serif" : "850 13px system-ui, sans-serif";
+      if (compact) {
+        ctx.textAlign = "left";
+        ctx.fillText(plot.title, plot.outerX + 14, plot.outerY + 28);
+      } else {
+        ctx.textAlign = "center";
+        ctx.fillText(plot.title, plot.x + plot.w / 2, plot.y - 14);
+      }
+      ctx.textAlign = "center";
+      ctx.fillText("X*розр", plot.x + plot.w / 2, plot.y + plot.h + (compact ? 40 : 50));
+
+      ctx.save();
+      ctx.translate(plot.x - (compact ? 42 : 50), plot.y + plot.h / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(yLabel, 0, 0);
+      ctx.restore();
+
+      ctx.font = compact ? "12px system-ui, sans-serif" : "12px system-ui, sans-serif";
+      ctx.fillStyle = "#334155";
+
+      for (let x = plot.xMin; x <= plot.xMax + 1e-9; x += plot.xStep) {
+        const rounded = Number(x.toFixed(3));
+        const px = plotX(plot, rounded);
+        ctx.textAlign = "center";
+        ctx.fillText(formatNumber(rounded, 2), px, plot.y + plot.h + (compact ? 22 : 22));
+      }
+
+      for (let y = plot.yMin; y <= plot.yMax + 1e-9; y += plot.yStep) {
+        const rounded = Number(y.toFixed(3));
+        const py = plotY(plot, rounded);
+        ctx.textAlign = "right";
+        ctx.fillText(formatNumber(rounded, 2), plot.x - 8, py + 4);
+      }
+
+      ctx.restore();
+    }
+
+    function drawCurveOnPlot(plot, generator, time, active) {
+      ctx.save();
+      ctx.beginPath();
+
+      const sampleCount = 180;
+      for (let index = 0; index <= sampleCount; index += 1) {
+        const x = plot.xMin + (plot.xMax - plot.xMin) * index / sampleCount;
+        let y = evaluateCurve(generator, time, x);
+        y = clamp(y, plot.yMin, plot.yMax);
+
+        const px = plotX(plot, x);
+        const py = plotY(plot, y);
+
+        if (index === 0) {
+          ctx.moveTo(px, py);
+        } else {
+          ctx.lineTo(px, py);
+        }
+      }
+
+      ctx.strokeStyle = active ? "#2563eb" : "#111827";
+      ctx.lineWidth = active ? 4 : 2;
+      ctx.globalAlpha = active ? 1 : 0.54;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawCurveLabelsOnPlot(plot, generator) {
+      ctx.save();
+      ctx.font = plot.w < 330 ? "850 11px system-ui, sans-serif" : "850 12px system-ui, sans-serif";
+      ctx.fillStyle = "#0f172a";
+      ctx.textAlign = "left";
+
+      TIME_ORDER.forEach((time, index) => {
+        const x = plot.xMin + (plot.xMax - plot.xMin) * 0.16;
+        let y = evaluateCurve(generator, time, x);
+        y = clamp(y, plot.yMin, plot.yMax);
+        const px = plotX(plot, x) + 6;
+        const py = plotY(plot, y) + (index - 2) * 3;
+        ctx.fillText(TIME_LABELS[time].replace("τ = ", ""), px, py);
+      });
+
+      ctx.restore();
+    }
+
+    function drawMarker(plot, x, y, result) {
+      const px = plotX(plot, x);
+      const py = plotY(plot, y);
+
+      ctx.save();
+
+      ctx.strokeStyle = "#dc2626";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px, plot.y + plot.h);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(plot.x, py);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#dc2626";
+      ctx.beginPath();
+      ctx.arc(px, py, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      const boxW = Math.min(220, plot.w - 12);
+      const boxH = 76;
+      const preferredX = px + 14;
+      const boxX = preferredX + boxW < plot.x + plot.w
+        ? preferredX
+        : Math.max(plot.x + 6, px - boxW - 14);
+      const boxY = Math.max(py - boxH - 12, plot.y + 8);
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.97)";
+      ctx.strokeStyle = "#fecaca";
+      ctx.lineWidth = 1;
+      roundRect(ctx, boxX, boxY, boxW, boxH, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#991b1b";
+      ctx.font = "800 13px system-ui, sans-serif";
+      ctx.fillText(`X*розр = ${formatNumber(result.selectedX, 4)}`, boxX + 12, boxY + 23);
+      ctx.fillText(`Iпt* = ${formatNumber(result.iPu, 4)}`, boxX + 12, boxY + 44);
+      ctx.font = "650 12px system-ui, sans-serif";
+      ctx.fillText(`${TIME_LABELS[result.time]}`, boxX + 12, boxY + 64);
+
+      ctx.restore();
+    }
+
+    function drawCanvasHeader(model, plot) {
+      ctx.save();
+      const canvasWidth = el.canvas.getBoundingClientRect().width;
+      ctx.fillStyle = "#0f172a";
+      ctx.font = canvasWidth < 700 ? "850 13px system-ui, sans-serif" : "850 14px system-ui, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(model.shortName, plot.x, 28);
+
+      if (canvasWidth >= 700) {
+        ctx.fillStyle = "#64748b";
+        ctx.font = "650 12px system-ui, sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText("Цифрова апроксимація розрахункових кривих", plot.x + plot.w, 28);
+      }
+      ctx.restore();
+    }
+
+    function roundRect(context, x, y, w, h, r) {
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.lineTo(x + w - r, y);
+      context.quadraticCurveTo(x + w, y, x + w, y + r);
+      context.lineTo(x + w, y + h - r);
+      context.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      context.lineTo(x + r, y + h);
+      context.quadraticCurveTo(x, y + h, x, y + h - r);
+      context.lineTo(x, y + r);
+      context.quadraticCurveTo(x, y, x + r, y);
+      context.closePath();
+    }
+
+    function updateLegend(activeTime) {
+      const items = TIME_ORDER.map(time => `
+        <span class="legend-item">
+          <span class="line-sample ${time === activeTime ? "active" : ""}"></span>
+          ${TIME_LABELS[time]}
+        </span>
+      `).join("");
+
+      el.legend.innerHTML = `
+        ${items}
+        <span class="legend-item"><span class="line-sample dashed"></span>Червоні пунктирні лінії — зчитування з графіка</span>
+      `;
+    }
+
+    function positionZoomButton(width, height) {
+      const model = getActiveModel();
+      const button = el.zoomInsetButton;
+      const mobile = width < 700;
+
+      if (mobile) {
+        button.style.display = "none";
+        return;
+      }
+
+      button.style.display = "block";
+
+      if (APP.zoomInset) {
+        button.classList.add("active");
+        button.textContent = mobile ? "↩ Назад" : "Повернути вигляд";
+        button.setAttribute("aria-label", "Повернути вигляд як у методичці");
+        button.style.left = "14px";
+        button.style.top = "14px";
+        return;
+      }
+
+      button.classList.remove("active");
+      button.textContent = mobile ? "⛶ X>1" : "⛶ Збільшити X>1";
+      button.setAttribute("aria-label", "Збільшити фрагмент X більше 1");
+
+      const inset = buildInsetPlot(width, height, model);
+      const measuredWidth = button.offsetWidth || (mobile ? 96 : 150);
+      const measuredHeight = button.offsetHeight || 32;
+      const left = inset.outerX + inset.outerW - measuredWidth - 10;
+      const top = inset.outerY + Math.max(8, (inset.headerHeight - measuredHeight) / 2);
+
+      button.style.left = `${Math.max(10, left)}px`;
+      button.style.top = `${Math.max(10, top)}px`;
+    }
+
+    function syncGeneratorControls() {
+      const model = getActiveModel();
+
+      el.graphTitle.textContent = model.title;
+      el.hydroCorrectionBox.style.display = APP.generator === "hydro" ? "block" : "none";
+
+      el.xSlider.min = String(model.xMin);
+      el.xSlider.max = String(model.xMax);
+
+      const currentValue = Number(String(el.xSlider.value).replace(",", "."));
+      const safeX = Number.isFinite(currentValue) ? clamp(currentValue, model.xMin, model.xMax) : model.xMin;
+      el.xSlider.value = String(safeX.toFixed(3));
+      el.sliderValue.textContent = formatNumber(safeX, 3);
+    }
+
+    function syncZoomButton() {
+      el.zoomInsetButton.classList.toggle("active", APP.zoomInset);
+      el.zoomInsetButton.textContent = APP.zoomInset
+        ? "Повернути вигляд як у методичці"
+        : "Збільшити фрагмент X>1";
+    }
+
+    function fullUpdate() {
+      syncGeneratorControls();
+      syncZoomButton();
+
+      const result = calculate();
+      updateOutputs(result);
+      draw();
+    }
+
+    function attachEvents() {
+      el.tabs.forEach(button => {
+        button.addEventListener("click", () => {
+          APP.generator = button.dataset.generator;
+          el.tabs.forEach(item => item.classList.toggle("active", item === button));
+          fullUpdate();
+        });
+      });
+
+      [el.timeSelect, el.xBase, el.sNom, el.sBase, el.uBase].forEach(input => {
+        input.addEventListener("input", fullUpdate);
+      });
+
+      el.xSlider.addEventListener("input", () => {
+        el.sliderValue.textContent = formatNumber(Number(el.xSlider.value), 3);
+        fullUpdate();
+      });
+
+      el.zoomInsetButton.addEventListener("click", () => {
+        APP.zoomInset = !APP.zoomInset;
+        fullUpdate();
+      });
+
+      window.addEventListener("resize", draw);
+    }
+
+    attachEvents();
+    fullUpdate();
+  </script>
+</body>
+</html>
